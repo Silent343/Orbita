@@ -1,0 +1,27 @@
+<Solution>
+  <Configurations><Platform Name="x64" /></Configurations>
+  <Folder Name="/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Orbita.SharedKernel/Orbita.SharedKernel.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/BuildingBlocks/Orbita.Localization/Orbita.Localization.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/BuildingBlocks/Orbita.Persistence/Orbita.Persistence.csproj"><Platform Project="x64" /></Project>
+  </Folder>
+  <Folder Name="/Modules/Files/">
+    <Project Path="src/Modules/Files/Orbita.Files.Domain/Orbita.Files.Domain.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Files/Orbita.Files.Application/Orbita.Files.Application.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Files/Orbita.Files.Infrastructure/Orbita.Files.Infrastructure.csproj"><Platform Project="x64" /></Project>
+  </Folder>
+  <Folder Name="/Modules/Preferences/">
+    <Project Path="src/Modules/Preferences/Orbita.Preferences.Domain/Orbita.Preferences.Domain.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Preferences/Orbita.Preferences.Application/Orbita.Preferences.Application.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Preferences/Orbita.Preferences.Infrastructure/Orbita.Preferences.Infrastructure.csproj"><Platform Project="x64" /></Project>
+  </Folder>
+  <Folder Name="/Modules/Activity/">
+    <Project Path="src/Modules/Activity/Orbita.Activity.Domain/Orbita.Activity.Domain.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Activity/Orbita.Activity.Application/Orbita.Activity.Application.csproj"><Platform Project="x64" /></Project>
+    <Project Path="src/Modules/Activity/Orbita.Activity.Infrastructure/Orbita.Activity.Infrastructure.csproj"><Platform Project="x64" /></Project>
+  </Folder>
+  <Project Path="src/Orbita.Desktop/Orbita.Desktop.csproj"><Platform Project="x64" /></Project>
+  <Folder Name="/Tests/">
+    <Project Path="tests/Orbita.Tests/Orbita.Tests.csproj"><Platform Project="x64" /></Project>
+  </Folder>
+</Solution>

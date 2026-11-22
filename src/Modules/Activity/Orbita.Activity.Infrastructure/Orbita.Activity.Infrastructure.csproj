@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Orbita.Activity.Application/Orbita.Activity.Application.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Orbita.Persistence/Orbita.Persistence.csproj" />
+  </ItemGroup>
+</Project>

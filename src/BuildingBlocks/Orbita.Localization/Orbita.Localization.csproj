@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Orbita.SharedKernel/Orbita.SharedKernel.csproj" />
+    <EmbeddedResource Include="Resources/*.json" />
+  </ItemGroup>
+</Project>

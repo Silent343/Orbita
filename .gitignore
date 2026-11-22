@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+.vs/
+TestResults/
+artifacts/
+*.user
+.tooling/
+/publish/
+/verification/
+*.pfx
+*.p12
+*.pem
+.env
+.env.*

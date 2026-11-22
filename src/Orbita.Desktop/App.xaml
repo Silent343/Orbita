@@ -1,0 +1,36 @@
+<Application x:Class="Orbita.Desktop.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+      </ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="GlassSurfaceBrush" Color="#582C323C" />
+          <SolidColorBrush x:Key="GlassBorderBrush" Color="#25FFFFFF" />
+          <SolidColorBrush x:Key="OrbitAccentBrush" Color="#B8E8D1" />
+          <SolidColorBrush x:Key="OrbitCenterBrush" Color="#E2222A32" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="GlassSurfaceBrush" Color="#99FFFFFF" />
+          <SolidColorBrush x:Key="GlassBorderBrush" Color="#300A201A" />
+          <SolidColorBrush x:Key="OrbitAccentBrush" Color="#255C46" />
+          <SolidColorBrush x:Key="OrbitCenterBrush" Color="#EFEEF7F3" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <Style x:Key="GlassCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource GlassSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="Padding" Value="24" />
+      </Style>
+      <Style TargetType="Button">
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16,11" />
+      </Style>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>
