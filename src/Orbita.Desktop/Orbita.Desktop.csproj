@@ -23,4 +23,17 @@
     <ProjectReference Include="../Modules/Preferences/Orbita.Preferences.Infrastructure/Orbita.Preferences.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/Activity/Orbita.Activity.Infrastructure/Orbita.Activity.Infrastructure.csproj" />
   </ItemGroup>
+  <!-- Unpackaged WinUI builds generate the PRI but do not include it in dotnet publish. -->
+  <Target Name="IncludeWinUiResourcesInPublish"
+          BeforeTargets="ComputeResolvedFilesToPublishList"
+          DependsOnTargets="$(GenerateProjectPriFile)">
+    <Error Condition="!Exists('$(ProjectPriFullPath)')"
+           Text="The application PRI is missing; publishing without WinUI resources would prevent startup." />
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(ProjectPriFullPath)">
+        <RelativePath>$(ProjectPriFileName)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

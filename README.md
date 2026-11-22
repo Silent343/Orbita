@@ -45,7 +45,7 @@ La pestaña Preferencias cambia español/inglés y tema claro/oscuro/sistema. La
 
 ## Estado de verificación de esta entrega
 
-Consulta [VERIFICATION.md](VERIFICATION.md). La compilación se genera sin firmar. En este equipo, una política de integridad de Windows exige una firma de confianza para `Orbita.Preferences.Application.dll` y `Orbita.Activity.Application.dll`, lo que bloquea parte de las pruebas y el arranque de la versión Release. No se ha cambiado ni desactivado esa política. La ejecución de esta entrega requiere autorización conforme a la política del equipo y, si corresponde, firma con un certificado de confianza. La inspección de la interfaz final está pendiente por ese bloqueo.
+Consulta [VERIFICATION.md](VERIFICATION.md). El 22 de noviembre de 2026 pasaron las 20 pruebas automatizadas y la verificación de las tres pestañas con cambios de idioma en vivo. El portable incluye ahora el recurso `Orbita.Desktop.pri`, cuya ausencia impedía cargar la ventana. La compilación sigue sin firma digital: Smart App Control puede bloquearla en otros equipos. El gesto global del Explorador todavía no se ha verificado de extremo a extremo.
 
 ## Funciones incluidas
 

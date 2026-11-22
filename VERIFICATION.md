@@ -1,5 +1,13 @@
 # Verificación de la primera entrega
 
+## Actualización: 22 de noviembre de 2026
+
+Después de que el propietario ajustara Smart App Control, las **20 pruebas automatizadas pasaron sin fallos ni omisiones**. Se verificó también el ejecutable portable con `--verify-ui`: las pestañas de trabajo, preferencias e historial cargan y actualizan sus textos al cambiar entre español e inglés.
+
+El cierre del portable al cargar XAML se debía a la ausencia de `Orbita.Desktop.pri` en la publicación, no a un error del marcado. Se añadió un destino MSBuild que incluye el PRI generado en `dotnet publish`, y `scripts/verify-publish.ps1` comprueba los archivos esenciales. La comprobación falló por el PRI ausente antes del cambio y pasó después, junto con la prueba de arranque del portable. El gesto global del Explorador todavía no se ha verificado de extremo a extremo.
+
+Los apartados siguientes conservan el estado histórico de la primera entrega; los bloqueos de aquella ejecución no representan el resultado de esta actualización.
+
 ## Compilación
 
 La solución se ha compilado con el SDK oficial .NET 10.0.402 y Windows App SDK 2.5.1. El SDK se descargó en la carpeta de trabajo del proyecto y se verificó con el SHA512 publicado por Microsoft. Las dependencias NuGet tienen versiones explícitas.

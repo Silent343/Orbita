@@ -29,5 +29,6 @@ if ($Publish) {
     $destination = Join-Path $projectRoot 'publish\win-x64'
     & $dotnetExe publish (Join-Path $projectRoot 'src\Orbita.Desktop\Orbita.Desktop.csproj') -c $Configuration -p:Platform=x64 -p:UseSharedCompilation=false -m:1 --no-restore -o $destination --verbosity minimal
     if ($LASTEXITCODE -ne 0) { throw 'La publicación falló.' }
+    & (Join-Path $PSScriptRoot 'verify-publish.ps1') -PublishDirectory $destination
     Write-Output (Join-Path $destination 'Orbita.Desktop.exe')
 }
