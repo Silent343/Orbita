@@ -16,6 +16,32 @@ internal static class RadialGlass
     private const float OuterRadius = 194;
     private const float GapDegrees = 5;
 
+    public static Bitmap CreateFrost(Bitmap source)
+    {
+        const int blurSamples = 28;
+        using var reduced = new Bitmap(blurSamples, blurSamples, PixelFormat.Format24bppRgb);
+        using var attributes = new ImageAttributes();
+        attributes.SetWrapMode(WrapMode.TileFlipXY);
+        using (var downsample = Graphics.FromImage(reduced))
+        {
+            downsample.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            downsample.DrawImage(source, new Rectangle(0, 0, blurSamples, blurSamples),
+                0, 0, source.Width, source.Height, GraphicsUnit.Pixel, attributes);
+        }
+
+        var frost = new Bitmap(Size, Size, PixelFormat.Format32bppPArgb);
+        try
+        {
+            attributes.SetColorMatrix(new ColorMatrix { Matrix33 = .68f });
+            using var upsample = Graphics.FromImage(frost);
+            upsample.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            upsample.DrawImage(reduced, new Rectangle(0, 0, Size, Size),
+                0, 0, reduced.Width, reduced.Height, GraphicsUnit.Pixel, attributes);
+            return frost;
+        }
+        catch { frost.Dispose(); throw; }
+    }
+
     public static int SectorAt(float x, float y, int count)
     {
         if (count == 0) return -1;
@@ -30,7 +56,7 @@ internal static class RadialGlass
     }
 
     public static Bitmap Render(int pixels, FileAsset file, string fileSize, FileAction[] actions,
-        ILocalizer text, int page, int pageCount, int highlight, bool light)
+        ILocalizer text, int page, int pageCount, int highlight, bool light, Bitmap? backdrop)
     {
         var bitmap = new Bitmap(pixels, pixels, PixelFormat.Format32bppPArgb);
         try
@@ -39,27 +65,26 @@ internal static class RadialGlass
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
             graphics.ScaleTransform((float)pixels / Size, (float)pixels / Size);
-            var ink = light ? Color.FromArgb(14, 34, 38) : Color.FromArgb(246, 253, 252);
-            var accent = light ? Color.FromArgb(17, 85, 74) : Color.FromArgb(169, 239, 218);
+            using var frost = backdrop is null ? null : new TextureBrush(backdrop, WrapMode.Clamp);
+            var ink = Color.FromArgb(23, 29, 39);
+            var accent = Color.FromArgb(62, 73, 89);
             var step = 360f / actions.Length;
             for (var index = 0; index < actions.Length; index++)
             {
                 var angle = -90 + index * step;
-                using var shape = new GraphicsPath();
-                var sweep = Sweep(step);
-                shape.AddArc(Circle(OuterRadius), angle - sweep / 2, sweep);
-                shape.AddArc(Circle(InnerRadius), angle + sweep / 2, -sweep);
-                shape.CloseFigure();
-                PaintGlass(graphics, shape, light, index == highlight);
+                using var shape = CreateSector(angle, Sweep(step));
+                var active = index == highlight;
+                PaintGlass(graphics, shape, frost, light, active);
                 var middle = Polar(143, angle);
                 var action = actions[index];
-                Label(graphics, action.Glyph, middle.X, middle.Y - 13, 22, 44, accent, "Segoe MDL2 Assets");
+                Label(graphics, action.Glyph, middle.X, middle.Y - 13, 22, 44,
+                    active ? Color.FromArgb(34, 72, 133) : accent, "Segoe MDL2 Assets");
                 Label(graphics, text[action.LabelKey], middle.X, middle.Y + 14, 13, 114, ink, style: FontStyle.Bold);
             }
 
             using var hub = new GraphicsPath();
             hub.AddEllipse(Circle(HubRadius));
-            PaintGlass(graphics, hub, light, false);
+            PaintGlass(graphics, hub, frost, light, false);
             DrawFileIcon(graphics, ink, accent, file.Extension.TrimStart('.').ToUpperInvariant());
             Label(graphics, fileSize, Center, Center + 8, 23, 138, ink, style: FontStyle.Bold);
             Label(graphics, file.Name, Center, Center + 34, 11, 126, ink);
@@ -78,18 +103,79 @@ internal static class RadialGlass
         catch { bitmap.Dispose(); throw; }
     }
 
-    private static void PaintGlass(Graphics graphics, GraphicsPath shape, bool light, bool active)
+    private static GraphicsPath CreateSector(float angle, float sweep)
     {
-        var top = light ? Color.FromArgb(234, 242, 254, 252) : Color.FromArgb(225, 53, 80, 85);
-        var bottom = light ? Color.FromArgb(217, 178, 214, 210) : Color.FromArgb(226, 16, 35, 43);
-        if (active)
+        const float corner = 11;
+        const float outerTrim = corner / OuterRadius * (180 / MathF.PI);
+        const float innerTrim = corner / InnerRadius * (180 / MathF.PI);
+        var start = angle - sweep / 2;
+        var end = angle + sweep / 2;
+        var shape = new GraphicsPath();
+        shape.AddArc(Circle(OuterRadius), start + outerTrim, sweep - 2 * outerTrim);
+        AddCorner(shape, Polar(OuterRadius, end - outerTrim), Polar(OuterRadius, end), Polar(OuterRadius - corner, end));
+        shape.AddLine(Polar(OuterRadius - corner, end), Polar(InnerRadius + corner, end));
+        AddCorner(shape, Polar(InnerRadius + corner, end), Polar(InnerRadius, end), Polar(InnerRadius, end - innerTrim));
+        shape.AddArc(Circle(InnerRadius), end - innerTrim, -sweep + 2 * innerTrim);
+        AddCorner(shape, Polar(InnerRadius, start + innerTrim), Polar(InnerRadius, start), Polar(InnerRadius + corner, start));
+        shape.AddLine(Polar(InnerRadius + corner, start), Polar(OuterRadius - corner, start));
+        AddCorner(shape, Polar(OuterRadius - corner, start), Polar(OuterRadius, start), Polar(OuterRadius, start + outerTrim));
+        shape.CloseFigure();
+        return shape;
+    }
+
+    private static void AddCorner(GraphicsPath shape, PointF from, PointF corner, PointF to)
+    {
+        static PointF Control(PointF endpoint, PointF vertex) =>
+            new((endpoint.X + 2 * vertex.X) / 3, (endpoint.Y + 2 * vertex.Y) / 3);
+        shape.AddBezier(from, Control(from, corner), Control(to, corner), to);
+    }
+
+    private static void PaintGlass(Graphics graphics, GraphicsPath shape, TextureBrush? frost, bool light, bool active)
+    {
+        var state = graphics.Save();
+        graphics.TranslateTransform(0, 2);
+        using (var shadow = new Pen(Color.FromArgb(13, 30, 35, 43)) { LineJoin = LineJoin.Round })
         {
-            top = light ? Color.FromArgb(248, 220, 255, 239) : Color.FromArgb(250, 51, 106, 97);
-            bottom = light ? Color.FromArgb(243, 157, 225, 205) : Color.FromArgb(248, 21, 66, 69);
+            for (var width = 12; width >= 2; width -= 2)
+            {
+                shadow.Width = width;
+                graphics.DrawPath(shadow, shape);
+            }
         }
-        using var fill = new LinearGradientBrush(shape.GetBounds(), top, bottom, 72f);
-        using var edge = new Pen(Color.FromArgb(active ? 235 : 145, 219, 255, 245), active ? 1.8f : 1f);
-        graphics.FillPath(fill, shape);
+        graphics.Restore(state);
+
+        var bounds = shape.GetBounds();
+        using var bevel = new LinearGradientBrush(bounds, Color.FromArgb(147, 255, 255, 255),
+            Color.FromArgb(52, 40, 52, 67), 65f);
+        using var rim = new Pen(bevel, 4.5f);
+        graphics.DrawPath(rim, shape);
+
+        if (frost is not null) graphics.FillPath(frost, shape);
+        var tint = active ? Color.FromArgb(232, 241, 255)
+            : light ? Color.FromArgb(244, 247, 251) : Color.FromArgb(228, 234, 242);
+        using var milk = new LinearGradientBrush(bounds, Color.White, tint, 65f)
+        {
+            InterpolationColors = new ColorBlend
+            {
+                Positions = [0, .19f, .48f, .77f, 1],
+                Colors = [Color.FromArgb(225, Color.White), Color.FromArgb(164, Color.White),
+                    Color.FromArgb(frost is null ? 185 : 133, tint), Color.FromArgb(151, tint),
+                    Color.FromArgb(205, Color.White)]
+            }
+        };
+        graphics.FillPath(milk, shape);
+
+        using var reflection = new LinearGradientBrush(bounds, Color.White, tint, 65f)
+        {
+            InterpolationColors = new ColorBlend
+            {
+                Positions = [0, .28f, .61f, .85f, 1],
+                Colors = [Color.FromArgb(252, Color.White), Color.FromArgb(220, Color.White),
+                    Color.FromArgb(86, 50, 63, 81), Color.FromArgb(145, 46, 58, 74),
+                    Color.FromArgb(242, Color.White)]
+            }
+        };
+        using var edge = new Pen(reflection, active ? 2.15f : 1.25f);
         graphics.DrawPath(edge, shape);
     }
 

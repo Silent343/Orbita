@@ -18,6 +18,7 @@ internal sealed class OverlayWindow : IDisposable
     private readonly Action<Exception> _onError;
     private FileAction[][] _pages = [];
     private FileAsset? _file;
+    private Bitmap? _frost;
     private Rectangle _bounds;
     private int _page;
     private int _highlight = -1;
@@ -54,8 +55,11 @@ internal sealed class OverlayWindow : IDisposable
         if (IsVisible) Draw();
     }
 
-    public void ShowAtCursor(FileAsset file)
+    public void ShowAtCursor(FileAsset file) => ShowAtCursor(file, null);
+
+    internal void ShowAtCursor(FileAsset file, Bitmap? testBackdrop)
     {
+        if (IsVisible) Hide();
         _pages = Enum.GetValues<ActionGroup>()
             .SelectMany(group => _catalog.For(file, group).Where(action => action.Available).Chunk(5))
             .ToArray();
@@ -74,6 +78,9 @@ internal sealed class OverlayWindow : IDisposable
         _scrollDelta = 0;
         try
         {
+            // Keep one capture in memory while the wheel is open, including during hover and paging.
+            using var captured = testBackdrop is null ? ScreenBackdrop.Capture(_bounds) : null;
+            _frost = (testBackdrop ?? captured) is { } backdrop ? RadialGlass.CreateFrost(backdrop) : null;
             Draw();
             _pointerTimer.Start();
         }
@@ -117,7 +124,7 @@ internal sealed class OverlayWindow : IDisposable
 
     internal Bitmap Snapshot() => RadialGlass.Render(_bounds.Width, _file!,
         FileSizeFormatter.Format(_file!.Size, _localizer.Culture),
-        _pages[_page], _localizer, _page, _pages.Length, _highlight, _light);
+        _pages[_page], _localizer, _page, _pages.Length, _highlight, _light, _frost);
 
     internal void Scroll(int delta) { _scrollDelta += delta; UpdatePointer(); }
 
@@ -126,6 +133,8 @@ internal sealed class OverlayWindow : IDisposable
         _pointerTimer.Stop();
         _file = null;
         _popup.Hide();
+        _frost?.Dispose();
+        _frost = null;
     }
 
     public void Dispose()

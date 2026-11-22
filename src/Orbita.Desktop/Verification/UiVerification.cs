@@ -1,5 +1,9 @@
 using System.Text.Json;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Drawing = System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using DrawingGradient = System.Drawing.Drawing2D.LinearGradientBrush;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -50,6 +54,7 @@ internal static class UiVerification
             window.ShowPage("workspace");
             VerifyOverlay(window.VerificationOverlay, directory);
             results["overlay.transparency-paging-and-focus"] = true;
+            results["overlay.frosted-backdrop"] = true;
             results["success"] = true;
         }
         catch (Exception exception) { results["success"] = false; results["error"] = exception.ToString(); }
@@ -61,21 +66,28 @@ internal static class UiVerification
     {
         var file = FileAsset.Create(Path.Combine(Path.GetFullPath(directory), "paisaje.png"), 2_621_440, DateTimeOffset.UtcNow);
         var foreground = NativeMethods.GetForegroundWindow();
+        using var backdrop = CreateGlassBackdrop();
         try
         {
-            overlay.ShowAtCursor(file);
+            overlay.ShowAtCursor(file, backdrop);
             if (!overlay.IsVisible || overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
                 throw new InvalidOperationException("A supported file should start on conversions.");
             if (NativeMethods.GetForegroundWindow() != foreground)
                 throw new InvalidOperationException("Showing the overlay must preserve focus.");
 
             using var conversions = overlay.Snapshot();
-            if (conversions.GetPixel(0, 0).A != 0 || conversions.GetPixel(conversions.Width / 2, conversions.Height / 2).A == 0)
-                throw new InvalidOperationException("The wheel must use a transparent canvas with a visible hub.");
+            var hubAlpha = conversions.GetPixel(conversions.Width * 3 / 8, conversions.Height / 2).A;
+            if (conversions.GetPixel(0, 0).A != 0 || hubAlpha is 0 or 255)
+                throw new InvalidOperationException("The wheel must use a transparent canvas with a translucent hub.");
+            using var frost = RadialGlass.CreateFrost(backdrop);
+            var dot = backdrop.GetPixel(13, 13);
+            var blurredDot = frost.GetPixel(13, 13);
+            if (blurredDot.A is < 160 or > 185 || blurredDot.R <= dot.R + 65)
+                throw new InvalidOperationException($"Expected a softened, translucent dot. Original {dot}, frost {blurredDot}.");
             if (RadialGlass.SectorAt(208, 65, overlay.VisibleActions.Count) != 0
                 || RadialGlass.SectorAt(208, 208, overlay.VisibleActions.Count) != -1)
                 throw new InvalidOperationException("The center must not trigger an action and the first sector must be clickable.");
-            conversions.Save(Path.Combine(directory, "wheel-conversions.png"), System.Drawing.Imaging.ImageFormat.Png);
+            conversions.Save(Path.Combine(directory, "wheel-conversions.png"), ImageFormat.Png);
 
             overlay.Scroll(-60);
             if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
@@ -84,12 +96,49 @@ internal static class UiVerification
             if (overlay.VisibleActions.Count != 5 || overlay.VisibleActions.Any(action => action.Group != ActionGroup.Tools))
                 throw new InvalidOperationException("Scrolling must reveal the five image tools.");
             using var tools = overlay.Snapshot();
-            tools.Save(Path.Combine(directory, "wheel-tools.png"), System.Drawing.Imaging.ImageFormat.Png);
+            tools.Save(Path.Combine(directory, "wheel-tools.png"), ImageFormat.Png);
+            SaveGlassPreview(backdrop, tools, Path.Combine(directory, "wheel-glass-preview.png"));
             overlay.Scroll(120);
             if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
                 throw new InvalidOperationException("Scrolling in the opposite direction must return to conversions.");
         }
         finally { overlay.Hide(); }
+    }
+
+    private static Drawing.Bitmap CreateGlassBackdrop()
+    {
+        var size = RadialGlass.Size;
+        var bitmap = new Drawing.Bitmap(size, size, PixelFormat.Format24bppRgb);
+        using var graphics = Drawing.Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        var bounds = new Drawing.Rectangle(0, 0, size, size);
+        using var background = new DrawingGradient(bounds, Drawing.Color.FromArgb(236, 237, 241),
+            Drawing.Color.FromArgb(192, 200, 214), 52f);
+        graphics.FillRectangle(background, bounds);
+        using var dots = new Drawing.SolidBrush(Drawing.Color.FromArgb(115, 123, 140));
+        for (var y = 12; y < size; y += 16)
+        for (var x = 12; x < size; x += 16)
+            graphics.FillRectangle(dots, x, y, 2, 2);
+
+        using var upper = new DrawingGradient(bounds, Drawing.Color.FromArgb(134, 150, 177),
+            Drawing.Color.FromArgb(96, 109, 138), 90f);
+        graphics.FillEllipse(upper, 241, -40, 148, 186);
+        using var lower = new DrawingGradient(bounds, Drawing.Color.FromArgb(244, 243, 247),
+            Drawing.Color.FromArgb(154, 169, 191), 32f);
+        graphics.FillEllipse(lower, -59, 244, 193, 173);
+        return bitmap;
+    }
+
+    private static void SaveGlassPreview(Drawing.Bitmap backdrop, Drawing.Bitmap wheel, string path)
+    {
+        using var preview = new Drawing.Bitmap(wheel.Width, wheel.Height, PixelFormat.Format24bppRgb);
+        using (var graphics = Drawing.Graphics.FromImage(preview))
+        {
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.DrawImage(backdrop, 0, 0, wheel.Width, wheel.Height);
+            graphics.DrawImageUnscaled(wheel, 0, 0);
+        }
+        preview.Save(path, ImageFormat.Png);
     }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
