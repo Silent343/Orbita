@@ -1,50 +1,39 @@
 # Órbita
 
-Aplicación nativa de escritorio para Windows, escrita en C# / .NET 10 y WinUI 3. Un archivo seleccionado ocupa el centro de una rueda de acciones, con su tamaño visible. La rueda cambia según el formato.
+Órbita es una aplicación para Windows que abre una rueda de conversiones y herramientas sobre el Explorador. La rueda muestra el nombre y el tamaño del archivo seleccionado en el centro y adapta las acciones a su formato. Está escrita en C# con .NET 10 y WinUI 3.
 
-## Ejecutar
+![Rueda de Órbita en cristal esmerilado con las herramientas de una imagen PNG](docs/images/orbita-cristal.png)
 
-Proyecto de código abierto bajo la [licencia MIT](LICENSE). Repositorio: [Silent343/Orbita](https://github.com/Silent343/Orbita).
+*Vista previa de la rueda de herramientas sobre un fondo de prueba.*
 
-Abre `publish/win-x64/Orbita.Desktop.exe` cuando exista una publicación compilada. Copia la carpeta completa para llevar la aplicación a otro equipo; el ejecutable necesita los archivos que lo acompañan.
+## Clonar, compilar y ejecutar
 
-Para desarrollo, instala el SDK de .NET 10 y abre `Orbita.slnx` en una versión de Visual Studio compatible con .NET 10 y WinUI. También se puede compilar desde PowerShell sin Visual Studio:
-
-```powershell
-.\scripts\setup.ps1                  # Solo si no hay SDK; descarga oficial local verificada con SHA512
-.\scripts\build.ps1 -Test -Publish
-```
-
-Destino: Windows 10 2004 o posterior / Windows 11, x64. Mica y Acrylic dependen de la versión de Windows y de la configuración de transparencia; el sistema puede usar un fondo de reserva. La primera restauración necesita acceso a NuGet.
-
-## Clonar y compilar
-
-Clona el repositorio y compila desde PowerShell en Windows:
+Necesitas Git, PowerShell y Windows x64 (Windows 10 versión 2004 o posterior, o Windows 11). La primera compilación necesita acceso a NuGet. Ejecuta estos comandos en PowerShell:
 
 ```powershell
 git clone https://github.com/Silent343/Orbita.git
 cd Orbita
-.\scripts\setup.ps1
+.\scripts\setup.ps1  # Solo si aún no tienes el SDK de .NET 10
 .\scripts\build.ps1 -Test -Publish
 .\publish\win-x64\Orbita.Desktop.exe
 ```
 
-El paso `setup.ps1` es opcional si ya tienes el SDK de .NET 10 instalado. Si lo ejecutas, descarga el SDK oficial, comprueba su SHA512 y lo prepara en `.tooling/dotnet`, dentro de la carpeta clonada. Las cachés y archivos de pruebas se guardan en `artifacts/`. Ambas carpetas, los binarios publicados y los diagnósticos locales están excluidos de Git. No necesitas Visual Studio para ejecutar estos scripts.
+`setup.ps1` descarga el SDK oficial, verifica su SHA512 y lo prepara en `.tooling/dotnet`. Puedes compilar desde PowerShell o abrir `Orbita.slnx` en una versión de Visual Studio compatible con .NET 10 y WinUI.
 
-Clonar desde GitHub o compilar en tu equipo **no garantiza que Smart App Control permita ejecutar el resultado**. El código abierto facilita inspeccionar y reproducir la compilación, pero no sustituye la firma digital ni la confianza del sistema. En este equipo ya se bloquearon DLL compiladas localmente. Consulta la [documentación de Smart App Control](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/overview).
+Si ya compilaste Órbita, abre `Orbita.Desktop.exe` desde `publish/win-x64`. Para ejecutarla en otro equipo, copia la carpeta completa. La compilación está sin firmar y Smart App Control puede bloquearla. [Documentación de Smart App Control](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/overview).
 
-## Uso
+## Activar y usar la rueda
 
-1. Inicia Órbita. Su icono se queda en la bandeja del sistema.
-2. Selecciona **un único archivo** desde el Explorador o el escritorio y mantén Shift durante 350 ms. El nombre y el tamaño aparecen en el centro de la rueda.
-3. Gira la rueda del ratón sobre el menú para recorrer las conversiones y herramientas. Haz clic en un sector mientras mantienes Shift. Suelta Shift o pulsa Esc para cerrar el menú.
-4. Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la carpeta configurada en Preferencias. Se reservan nombres nuevos para evitar sobrescrituras.
+1. Ejecuta Órbita. Busca su icono en la bandeja del sistema, junto al reloj de Windows o en el menú de iconos ocultos.
+2. El atajo viene activado. Si lo desactivaste, haz clic derecho en el icono, abre **Preferencias** y enciende **Activar rueda desde el Explorador**.
+3. Selecciona **un solo archivo** en el Explorador o en el escritorio y mantén presionada **Shift**. La rueda aparece tras 350 ms con la configuración predeterminada.
+4. Mantén **Shift** y gira la rueda del ratón sobre el menú para recorrer las páginas de conversiones y herramientas. Haz clic en una opción para usarla. Suelta **Shift** o pulsa **Esc** para cerrar la rueda.
 
-El menú del icono de bandeja abre Preferencias o cierra Órbita. Desde Preferencias puedes cambiar idioma y tema. El espacio de trabajo también sigue disponible desde la navegación de esa ventana.
+Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la carpeta que elijas en **Preferencias**. Órbita crea nombres nuevos para evitar sobrescrituras. Desde el menú de la bandeja puedes abrir **Preferencias** o elegir **Salir de Órbita**.
 
 ## Estado de verificación de esta entrega
 
-Consulta [VERIFICATION.md](VERIFICATION.md). El 22 de noviembre de 2026 pasaron las 20 pruebas automatizadas y la verificación de las tres pestañas con cambios de idioma en vivo. El portable incluye ahora el recurso `Orbita.Desktop.pri`, cuya ausencia impedía cargar la ventana. La compilación sigue sin firma digital: Smart App Control puede bloquearla en otros equipos. El gesto global del Explorador todavía no se ha verificado de extremo a extremo.
+El 22 de noviembre de 2026 pasaron las 20 pruebas automatizadas y la comprobación visual del ejecutable portable. El diagnóstico verificó el cambio de idioma, la navegación por la rueda y el desenfoque sobre un fondo de prueba. Queda por verificar de extremo a extremo el gesto con Shift en el Explorador. [Detalles de verificación](VERIFICATION.md).
 
 ## Funciones incluidas
 
@@ -65,7 +54,6 @@ Incluye cancelación, historial local de los últimos 200 resultados, preferenci
 - TXT ↔ MD conserva bytes y no interpreta ni elimina la sintaxis Markdown.
 - JPG coloca la transparencia sobre blanco. La compresión a calidad 75 % puede generar un archivo mayor según la entrada.
 - La edición trabaja sobre una imagen / primera página TIFF, no sobre secuencias animadas o TIFF multipágina.
-- La rueda utiliza transparencia por píxel y un acabado de cristal translúcido sobre el Explorador.
 - El atajo usa la selección del Shell de Windows y no el portapapeles. Los gestores de archivos de terceros no están incluidos. No hay soporte para carpetas ni lotes.
 - Cerrar Preferencias devuelve Órbita a la bandeja. Usa «Salir de Órbita» para detenerla.
 - La distribución es una carpeta portable sin firma digital ni instalador.
@@ -105,7 +93,7 @@ Los datos de ejecución se guardan en `%LOCALAPPDATA%/Orbita`: `preferences.json
 .\publish\win-x64\Orbita.Desktop.exe --verify-ui C:\ruta\de\verificacion
 ```
 
-Este modo de diagnóstico abre la aplicación, inspecciona las tres vistas, cambia el idioma en caliente, captura cada vista y guarda `ui-verification.json`. Al terminar cierra la aplicación. No cambia las preferencias guardadas.
+Este modo de diagnóstico inspecciona las tres vistas, cambia el idioma durante la ejecución y comprueba la rueda sobre un fondo de prueba. Guarda las capturas y el informe `ui-verification.json` en la carpeta indicada y cierra la aplicación al terminar.
 
 ## Licencia
 
