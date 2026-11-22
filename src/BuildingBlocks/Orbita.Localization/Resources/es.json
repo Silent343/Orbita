@@ -97,6 +97,7 @@
   "HistorySaveWarning": "El resultado se guardó, pero no fue posible añadirlo al historial.",
   "PreferencesLoadWarning": "No se pudieron leer las preferencias. Se usará la configuración predeterminada durante esta sesión.",
   "OverlayTitle": "Órbita · acciones rápidas",
+  "ExitApplication": "Salir de Órbita",
   "OverlayOpenApp": "Abrir aplicación",
   "OverlayHint": "Mantén Shift · rueda para más opciones · Esc para cerrar",
   "SelectFirst": "Selecciona primero un archivo",

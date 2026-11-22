@@ -35,13 +35,12 @@ Clonar desde GitHub o compilar en tu equipo **no garantiza que Smart App Control
 
 ## Uso
 
-1. Arrastra un archivo al espacio de trabajo o pulsa «Elegir archivo».
-2. Elige un formato o cambia al grupo «Herramientas».
-3. Usa Shift + la rueda del ratón para alternar entre ambos grupos.
-4. Desde el Explorador o el escritorio, selecciona **un único archivo** y mantén Shift durante 350 ms. La ventana de Órbita debe seguir abierta, aunque puede estar minimizada. Suelta Shift o pulsa Esc para cerrar el menú flotante; haz clic en una acción mientras mantienes Shift para ejecutarla.
-5. Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la carpeta configurada en Preferencias. Se reservan nombres nuevos para no sobrescribir archivos.
+1. Inicia Órbita. Su icono se queda en la bandeja del sistema.
+2. Selecciona **un único archivo** desde el Explorador o el escritorio y mantén Shift durante 350 ms. El nombre y el tamaño aparecen en el centro de la rueda.
+3. Gira la rueda del ratón sobre el menú para recorrer las conversiones y herramientas. Haz clic en un sector mientras mantienes Shift. Suelta Shift o pulsa Esc para cerrar el menú.
+4. Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la carpeta configurada en Preferencias. Se reservan nombres nuevos para evitar sobrescrituras.
 
-La pestaña Preferencias cambia español/inglés y tema claro/oscuro/sistema. La localización se inyecta en las vistas y modelos de presentación y se actualiza en caliente.
+El menú del icono de bandeja abre Preferencias o cierra Órbita. Desde Preferencias puedes cambiar idioma y tema. El espacio de trabajo también sigue disponible desde la navegación de esa ventana.
 
 ## Estado de verificación de esta entrega
 
@@ -66,9 +65,9 @@ Incluye cancelación, historial local de los últimos 200 resultados, preferenci
 - TXT ↔ MD conserva bytes y no interpreta ni elimina la sintaxis Markdown.
 - JPG coloca la transparencia sobre blanco. La compresión a calidad 75 % puede generar un archivo mayor según la entrada.
 - La edición trabaja sobre una imagen / primera página TIFF, no sobre secuencias animadas o TIFF multipágina.
-- La ventana flotante usa Acrylic en una superficie rectangular de Windows. No es una superposición de transparencia por píxel fuera del círculo.
+- La rueda utiliza transparencia por píxel y un acabado de cristal translúcido sobre el Explorador.
 - El atajo usa la selección del Shell de Windows y no el portapapeles. Los gestores de archivos de terceros no están incluidos. No hay soporte para carpetas ni lotes.
-- Cerrar la ventana principal cierra el programa. No se registra inicio automático, servicio ni icono de bandeja.
+- Cerrar Preferencias devuelve Órbita a la bandeja. Usa «Salir de Órbita» para detenerla.
 - La distribución es una carpeta portable sin firma digital ni instalador.
 
 ## Estructura

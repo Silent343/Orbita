@@ -3,12 +3,15 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Orbita.Desktop.Presentation;
+using Orbita.Desktop.Presentation.Controls;
 using Orbita.Desktop.Presentation.Views;
 using Orbita.Desktop.Services;
 using Orbita.Desktop.WindowsIntegration;
 using Orbita.Files.Domain;
+using Orbita.Files.Application;
 using Orbita.Localization;
 using Windows.Graphics;
+using Forms = System.Windows.Forms;
 
 namespace Orbita.Desktop;
 
@@ -21,6 +24,10 @@ public sealed partial class MainWindow : Window
     private readonly FilePickerService _picker;
     private readonly ExplorerShortcutService _shortcut;
     private readonly OverlayWindow _overlay;
+    private readonly Forms.NotifyIcon _tray;
+    private readonly Forms.ContextMenuStrip _trayMenu;
+    private readonly Forms.ToolStripMenuItem _traySettings;
+    private readonly Forms.ToolStripMenuItem _trayExit;
     private string _activePage = "workspace";
     private string? _noticeKey;
     private bool _closing;
@@ -28,7 +35,7 @@ public sealed partial class MainWindow : Window
     private string? _theme;
     public ILocalizer L { get; }
 
-    public MainWindow(IServiceProvider services)
+    public MainWindow(IServiceProvider services, bool enableTray = true)
     {
         _services = services;
         L = services.GetRequiredService<ILocalizer>();
@@ -44,11 +51,20 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
         AppWindow.Resize(new SizeInt32(1280, 1000));
-        _overlay = new OverlayWindow(_workspace, L);
+        _overlay = new OverlayWindow(services.GetRequiredService<IActionCatalog>(), L, DispatcherQueue, ShowError);
+        _traySettings = new Forms.ToolStripMenuItem();
+        _traySettings.Click += (_, _) => { Activate(); ShowPage("settings"); };
+        _trayExit = new Forms.ToolStripMenuItem();
+        _trayExit.Click += (_, _) => RequestExit();
+        _trayMenu = new Forms.ContextMenuStrip();
+        _trayMenu.Items.AddRange([_traySettings, _trayExit]);
+        _tray = new Forms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, ContextMenuStrip = _trayMenu };
+        _tray.DoubleClick += (_, _) => { Activate(); ShowPage("settings"); };
+        UpdateTrayLanguage();
+        _tray.Visible = enableTray;
         ApplyPreferences();
 
-        _overlay.ActionRequested += async (_, action) => await ExecuteActionAsync(action);
-        _overlay.OpenApplicationRequested += (_, _) => { Activate(); ShowPage("workspace"); };
+        _overlay.ActionRequested += async (_, action) => await ExecuteActionAsync(action, fromOverlay: true);
         _workspace.Warning += (_, key) => ShowNotice(key, InfoBarSeverity.Warning);
         _preferences.Changed += PreferencesChanged;
         L.LanguageChanged += LanguageChanged;
@@ -58,10 +74,9 @@ public sealed partial class MainWindow : Window
         Navigation.SelectedItem = WorkspaceItem;
         AppWindow.Closing += (_, arguments) =>
         {
-            if (!_workspace.IsBusy) return;
+            if (_closing) return;
             arguments.Cancel = true;
-            _closing = true;
-            _workspace.Cancel();
+            AppWindow.Hide();
         };
         _workspace.PropertyChanged += WorkspacePropertyChanged;
         Closed += OnClosed;
@@ -76,7 +91,22 @@ public sealed partial class MainWindow : Window
     private void LanguageChanged(object? sender, EventArgs arguments)
     {
         Title = L["AppName"];
+        UpdateTrayLanguage();
         if (_noticeKey is not null) NoticeBar.Message = L[_noticeKey];
+    }
+
+    private void UpdateTrayLanguage()
+    {
+        _tray.Text = L["AppName"];
+        _traySettings.Text = L["NavSettings"];
+        _trayExit.Text = L["ExitApplication"];
+    }
+
+    private void RequestExit()
+    {
+        _closing = true;
+        if (_workspace.IsBusy) _workspace.Cancel();
+        else Close();
     }
 
     private void PreferencesChanged(object? sender, EventArgs arguments) => ApplyPreferences();
@@ -92,7 +122,7 @@ public sealed partial class MainWindow : Window
         Root.RequestedTheme = theme;
         Ui.Theme = theme == ElementTheme.Light || (theme == ElementTheme.Default
             && Application.Current.RequestedTheme == ApplicationTheme.Light) ? "Light" : "Dark";
-        _overlay.ApplyTheme(theme);
+        _overlay.ApplyTheme(Ui.Theme == "Light");
         if (_theme != _preferences.Current.Theme)
         {
             _theme = _preferences.Current.Theme;
@@ -137,12 +167,13 @@ public sealed partial class MainWindow : Window
         {
             if (_workspace.IsBusy || _actionDialogOpen) return;
             await _workspace.SelectAsync(path);
-            if (_workspace.File?.Path == path && !_closing) _overlay.ShowAtCursor();
+            if (!_closing && _workspace.File is { } file && string.Equals(file.Path, path, StringComparison.OrdinalIgnoreCase))
+                _overlay.ShowAtCursor(file);
         }
         catch (Exception exception) { ShowError(exception); }
     }
 
-    private async Task ExecuteActionAsync(FileAction action)
+    private async Task ExecuteActionAsync(FileAction action, bool fromOverlay = false)
     {
         if (_workspace.IsBusy || _actionDialogOpen) return;
         try
@@ -152,13 +183,32 @@ public sealed partial class MainWindow : Window
             if (action.Id is "image.crop" or "image.resize" && _workspace.File is not null)
             {
                 _actionDialogOpen = true;
+                var wasVisible = AppWindow.IsVisible;
                 Activate();
-                options = await ImageOptionsDialog.ShowAsync(Root.XamlRoot, _workspace.File, action.Id == "image.crop", L);
-                _actionDialogOpen = false;
+                try
+                {
+                    if (Root.XamlRoot is null)
+                    {
+                        var loaded = new TaskCompletionSource();
+                        RoutedEventHandler onLoaded = (_, _) => loaded.TrySetResult();
+                        Root.Loaded += onLoaded;
+                        try { if (Root.XamlRoot is null) await loaded.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+                        finally { Root.Loaded -= onLoaded; }
+                    }
+                    var dialogRoot = Root.XamlRoot ?? throw new InvalidOperationException("The dialog host is unavailable.");
+                    options = await ImageOptionsDialog.ShowAsync(dialogRoot, _workspace.File, action.Id == "image.crop", L);
+                }
+                finally
+                {
+                    _actionDialogOpen = false;
+                    if (fromOverlay && !wasVisible) AppWindow.Hide();
+                }
                 if (options is null) return;
             }
             await _workspace.ExecuteAsync(action, options);
-            Activate();
+            if (fromOverlay && _tray.Visible)
+                _tray.ShowBalloonTip(3500, L["AppName"], _workspace.Status, Forms.ToolTipIcon.None);
+            else if (!_closing) Activate();
         }
         catch (Exception exception) { _actionDialogOpen = false; ShowError(exception); }
     }
@@ -182,7 +232,9 @@ public sealed partial class MainWindow : Window
         _closing = true;
         _workspace.Cancel();
         _shortcut.Dispose();
-        _overlay.Close();
+        _overlay.Dispose();
+        _tray.Dispose();
+        _trayMenu.Dispose();
         _preferences.Changed -= PreferencesChanged;
         L.LanguageChanged -= LanguageChanged;
         _shortcut.FileRequested -= ShortcutFileRequested;

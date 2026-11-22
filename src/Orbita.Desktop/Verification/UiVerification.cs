@@ -6,6 +6,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Orbita.Desktop.Presentation;
+using Orbita.Desktop.Presentation.Controls;
+using Orbita.Desktop.WindowsIntegration;
+using Orbita.Files.Domain;
 using Orbita.Localization;
 using Windows.Graphics.Imaging;
 
@@ -45,11 +48,48 @@ internal static class UiVerification
                 await SaveScreenshotAsync(window.VerificationRoot, Path.Combine(directory, page + ".png"));
             }
             window.ShowPage("workspace");
+            VerifyOverlay(window.VerificationOverlay, directory);
+            results["overlay.transparency-paging-and-focus"] = true;
             results["success"] = true;
         }
         catch (Exception exception) { results["success"] = false; results["error"] = exception.ToString(); }
         await File.WriteAllTextAsync(Path.Combine(directory, "ui-verification.json"), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
         window.Close();
+    }
+
+    private static void VerifyOverlay(OverlayWindow overlay, string directory)
+    {
+        var file = FileAsset.Create(Path.Combine(Path.GetFullPath(directory), "paisaje.png"), 2_621_440, DateTimeOffset.UtcNow);
+        var foreground = NativeMethods.GetForegroundWindow();
+        try
+        {
+            overlay.ShowAtCursor(file);
+            if (!overlay.IsVisible || overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
+                throw new InvalidOperationException("A supported file should start on conversions.");
+            if (NativeMethods.GetForegroundWindow() != foreground)
+                throw new InvalidOperationException("Showing the overlay must preserve focus.");
+
+            using var conversions = overlay.Snapshot();
+            if (conversions.GetPixel(0, 0).A != 0 || conversions.GetPixel(conversions.Width / 2, conversions.Height / 2).A == 0)
+                throw new InvalidOperationException("The wheel must use a transparent canvas with a visible hub.");
+            if (RadialGlass.SectorAt(208, 65, overlay.VisibleActions.Count) != 0
+                || RadialGlass.SectorAt(208, 208, overlay.VisibleActions.Count) != -1)
+                throw new InvalidOperationException("The center must not trigger an action and the first sector must be clickable.");
+            conversions.Save(Path.Combine(directory, "wheel-conversions.png"), System.Drawing.Imaging.ImageFormat.Png);
+
+            overlay.Scroll(-60);
+            if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
+                throw new InvalidOperationException("High-resolution wheels must accumulate a full tick before paging.");
+            overlay.Scroll(-60);
+            if (overlay.VisibleActions.Count != 5 || overlay.VisibleActions.Any(action => action.Group != ActionGroup.Tools))
+                throw new InvalidOperationException("Scrolling must reveal the five image tools.");
+            using var tools = overlay.Snapshot();
+            tools.Save(Path.Combine(directory, "wheel-tools.png"), System.Drawing.Imaging.ImageFormat.Png);
+            overlay.Scroll(120);
+            if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
+                throw new InvalidOperationException("Scrolling in the opposite direction must return to conversions.");
+        }
+        finally { overlay.Hide(); }
     }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)

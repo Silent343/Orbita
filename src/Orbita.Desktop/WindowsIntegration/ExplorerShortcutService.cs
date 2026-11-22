@@ -9,6 +9,7 @@ public sealed class ExplorerShortcutService(PreferencesState preferences, IExplo
     private DispatcherQueueTimer? _timer;
     private readonly Stopwatch _hold = new();
     private bool _triggered;
+    private bool _dismissed;
     private nint _sourceWindow;
     public event EventHandler<string>? FileRequested;
     public event EventHandler? Released;
@@ -26,15 +27,20 @@ public sealed class ExplorerShortcutService(PreferencesState preferences, IExplo
     {
         var shift = (NativeMethods.GetAsyncKeyState(0x10) & 0x8000) != 0;
         var escape = (NativeMethods.GetAsyncKeyState(0x1B) & 0x8000) != 0;
-        if (!shift || escape || !preferences.Current.ExplorerShortcutEnabled)
+        if (!shift)
+            _dismissed = false;
+        else if (escape || !preferences.Current.ExplorerShortcutEnabled)
+            _dismissed = true;
+        var foreground = NativeMethods.GetForegroundWindow();
+        if (!shift || _dismissed || (_triggered && foreground != _sourceWindow))
         {
             if (_triggered) Released?.Invoke(this, EventArgs.Empty);
+            if (_triggered && shift) _dismissed = true;
             _hold.Reset();
             _triggered = false;
             return;
         }
         if (_triggered) return;
-        var foreground = NativeMethods.GetForegroundWindow();
         if (!NativeMethods.IsFileSurface(foreground)) { _hold.Reset(); return; }
         // A click or another modifier means Windows selection/dragging is in progress.
         if ((NativeMethods.GetAsyncKeyState(0x01) & 0x8000) != 0

@@ -97,6 +97,7 @@
   "HistorySaveWarning": "The result was saved, but it could not be added to activity.",
   "PreferencesLoadWarning": "Preferences could not be read. Default settings will be used for this session.",
   "OverlayTitle": "Orbita · quick actions",
+  "ExitApplication": "Exit Orbita",
   "OverlayOpenApp": "Open application",
   "OverlayHint": "Hold Shift · wheel for more options · Esc to close",
   "SelectFirst": "Select a file first",

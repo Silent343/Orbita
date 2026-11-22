@@ -26,10 +26,12 @@ public partial class App : Application
             var failedPreferences = false;
             try { await _services.GetRequiredService<PreferencesState>().LoadAsync(); }
             catch (Exception exception) { _services.GetRequiredService<Diagnostics>().Log(exception); failedPreferences = true; }
-            _window = new MainWindow(_services);
-            _window.Activate();
+            var verifyUi = verificationIndex >= 0 && verificationIndex + 1 < launchArguments.Length;
+            _window = new MainWindow(_services, enableTray: !verifyUi);
+            if (verifyUi || launchArguments.Contains("--workspace"))
+                _window.Activate();
             if (failedPreferences) _window.ShowNotice("PreferencesLoadWarning", Microsoft.UI.Xaml.Controls.InfoBarSeverity.Warning);
-            if (verificationIndex >= 0 && verificationIndex + 1 < launchArguments.Length)
+            if (verifyUi)
                 await Verification.UiVerification.RunAsync(_window, _services, launchArguments[verificationIndex + 1]);
         }
         catch (Exception exception)
