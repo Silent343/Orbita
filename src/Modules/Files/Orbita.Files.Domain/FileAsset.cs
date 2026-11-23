@@ -2,11 +2,14 @@ using Orbita.SharedKernel;
 
 namespace Orbita.Files.Domain;
 
-public enum FileCategory { Pdf, Image, Text, Other }
+public enum FileCategory { Pdf, Image, Text, Other, Word, Video }
 public enum ActionGroup { Convert, Tools }
 
 public sealed record FileAsset
 {
+    public static IReadOnlyList<string> ImageExtensions { get; } =
+        Array.AsReadOnly(new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".heic", ".heif" });
+
     private FileAsset(string path, long size, DateTimeOffset modified)
     {
         Path = path;
@@ -16,8 +19,10 @@ public sealed record FileAsset
         Category = Extension switch
         {
             ".pdf" => FileCategory.Pdf,
-            ".png" or ".jpg" or ".jpeg" or ".bmp" or ".tif" or ".tiff" => FileCategory.Image,
+            _ when ImageExtensions.Contains(Extension) => FileCategory.Image,
             ".txt" or ".md" => FileCategory.Text,
+            ".docx" => FileCategory.Word,
+            ".mp4" or ".m4v" or ".mkv" or ".mov" or ".avi" or ".webm" or ".wmv" or ".mpeg" or ".mpg" or ".3gp" => FileCategory.Video,
             _ => FileCategory.Other
         };
     }
@@ -26,6 +31,7 @@ public sealed record FileAsset
     public string Name => System.IO.Path.GetFileName(Path);
     public long Size { get; }
     public string Extension { get; }
+    public bool IsHeic => Extension is ".heic" or ".heif";
     public FileCategory Category { get; }
     public DateTimeOffset Modified { get; }
 

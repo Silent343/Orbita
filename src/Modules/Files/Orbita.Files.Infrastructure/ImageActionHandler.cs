@@ -9,10 +9,20 @@ namespace Orbita.Files.Infrastructure;
 
 public sealed class ImageActionHandler : IFileActionHandler
 {
-    public bool CanHandle(string actionId) => actionId.StartsWith("image.", StringComparison.Ordinal);
+    public bool CanHandle(string actionId) => actionId is "image.jpg" or "image.png" or "image.bmp" or "image.tiff"
+        or "image.crop" or "image.resize" or "image.rotate" or "image.compress";
 
     public async Task<ActionResult> ExecuteAsync(ActionRequest request, CancellationToken cancellationToken)
     {
+        if (request.File.IsHeic && request.ActionId == "image.jpg")
+        {
+            using var jpeg = OutputFile.Create(request.OutputDirectory, Path.GetFileNameWithoutExtension(request.File.Name), ".jpg");
+            await HeicJpeg.WriteAsync(request.File.Path, jpeg.Stream, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var bytes = jpeg.Stream.Length;
+            jpeg.Commit();
+            return new ActionResult([jpeg.Path], bytes);
+        }
         await using var input = File.OpenRead(request.File.Path);
         using var inputStream = input.AsRandomAccessStream();
         var decoder = await BitmapDecoder.CreateAsync(inputStream).AsTask(cancellationToken);

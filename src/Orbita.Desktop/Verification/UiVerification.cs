@@ -53,6 +53,8 @@ internal static class UiVerification
             }
             window.ShowPage("workspace");
             VerifyOverlay(window.VerificationOverlay, directory);
+            VerifyConversionActions(window.VerificationOverlay, directory);
+            results["overlay.new-conversion-actions"] = true;
             results["overlay.transparency-paging-and-focus"] = true;
             results["overlay.frosted-backdrop"] = true;
             results["success"] = true;
@@ -127,6 +129,32 @@ internal static class UiVerification
             Drawing.Color.FromArgb(154, 169, 191), 32f);
         graphics.FillEllipse(lower, -59, 244, 193, 173);
         return bitmap;
+    }
+
+    private static void VerifyConversionActions(OverlayWindow overlay, string directory)
+    {
+        using var backdrop = CreateGlassBackdrop();
+        (string File, string[] Actions)[] examples =
+        [
+            ("documento.pdf", ["pdf.word", "pdf.pptx"]),
+            ("documento.docx", ["word.pdf"]),
+            ("foto.heic", ["image.jpg", "image.pdf"]),
+            ("foto.png", ["image.pdf"]),
+            ("video.mp4", ["video.mp3"])
+        ];
+        try
+        {
+            foreach (var (name, actions) in examples)
+            {
+                var file = FileAsset.Create(Path.Combine(Path.GetFullPath(directory), name), 1024, DateTimeOffset.UtcNow);
+                overlay.ShowAtCursor(file, backdrop);
+                if (!overlay.IsVisible || actions.Any(id => !overlay.VisibleActions.Any(action => action.Id == id)))
+                    throw new InvalidOperationException($"Missing conversion on the wheel for {name}.");
+                using var wheel = overlay.Snapshot();
+                wheel.Save(Path.Combine(directory, $"conversion-{Path.GetExtension(name)[1..]}.png"), ImageFormat.Png);
+            }
+        }
+        finally { overlay.Hide(); }
     }
 
     private static void SaveGlassPreview(Drawing.Bitmap backdrop, Drawing.Bitmap wheel, string path)

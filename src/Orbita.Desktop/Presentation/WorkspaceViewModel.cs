@@ -49,7 +49,7 @@ public sealed class WorkspaceViewModel(ILocalizer localizer, IFileInspector insp
         RaisePropertyChanged(nameof(Actions));
     }
 
-    public async Task ExecuteAsync(FileAction action, ImageEditOptions? options = null)
+    public async Task ExecuteAsync(FileAction action, ImageEditOptions? options = null, IReadOnlyList<string>? additionalImages = null)
     {
         if (IsBusy || File is null) return;
         if (!action.Available) { Warning?.Invoke(this, action.UnavailableReasonKey ?? "ErrorActionUnavailable"); return; }
@@ -59,7 +59,7 @@ public sealed class WorkspaceViewModel(ILocalizer localizer, IFileInspector insp
         _cancellation = cancellation;
         try
         {
-            var completed = await operations.ExecuteAsync(File, action, options, cancellation.Token);
+            var completed = await operations.ExecuteAsync(File, action, options, cancellation.Token, additionalImages);
             LastOutputs = completed.Result.OutputPaths;
             SetStatus("ResultSaved", LastOutputs.Count, completed.Result.OutputBytes);
             if (!completed.HistorySaved) Warning?.Invoke(this, "HistorySaveWarning");

@@ -33,14 +33,17 @@ Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la 
 
 ## Estado de verificación de esta entrega
 
-El 22 de noviembre de 2026 pasaron las 20 pruebas automatizadas y la comprobación visual del ejecutable portable. El diagnóstico verificó el cambio de idioma, la navegación por la rueda y el desenfoque sobre un fondo de prueba. Queda por verificar de extremo a extremo el gesto con Shift en el Explorador. [Detalles de verificación](VERIFICATION.md).
+Las 30 pruebas automatizadas incluyen validación de los archivos Office generados, lectura de HEIC, un PDF con varias fotos, exportación mediante LibreOffice y extracción de audio con FFmpeg. Los casos con motores externos se ejecutan cuando las rutas `ORBITA_LIBREOFFICE` y `ORBITA_FFMPEG` están configuradas. [Detalles de verificación de la rueda](VERIFICATION.md).
 
 ## Funciones incluidas
 
 | Entrada | Acciones |
 | --- | --- |
-| PDF | Extraer texto a TXT / Markdown; renderizar todas las páginas a PNG / JPG |
-| PNG, JPG, BMP, TIFF | Convertir entre estos formatos; recortar por coordenadas; redimensionar; girar 90°; guardar JPG a calidad 75 % |
+| PDF | Crear Word (DOCX) con texto editable, PowerPoint (PPTX) con una imagen por página, TXT o Markdown; renderizar páginas a PNG o JPG |
+| DOCX | Exportar a PDF con LibreOffice |
+| PNG, JPG, BMP, TIFF | Convertir entre estos formatos; reunir fotos en un PDF; recortar, redimensionar, girar y comprimir |
+| HEIC, HEIF | Convertir a JPG o añadir al PDF de fotos |
+| MP4, M4V, MKV, MOV, AVI, WebM, WMV, MPEG, MPG, 3GP | Extraer la primera pista de audio como MP3 mediante FFmpeg |
 | TXT / MD | Guardar copia como TXT / MD, conservando el contenido |
 | Cualquier archivo | Crear un ZIP con el archivo |
 
@@ -48,13 +51,14 @@ Incluye cancelación, historial local de los últimos 200 resultados, preferenci
 
 ## Límites de esta primera versión
 
-- PDF → Word y PowerPoint aparecen deshabilitados. Necesitan un adaptador de conversión adicional que preserve la estructura editable. No se finge una conversión cambiando la extensión.
-- La extracción PDF → TXT/MD conserva texto; no reconstruye tablas, formato o títulos Markdown. Los documentos escaneados necesitan OCR, aún no incluido.
+- PDF → Word genera párrafos editables y saltos de página con formato básico. La extracción de texto no reconstruye tablas ni diseño. Los escaneos necesitan OCR para obtener texto editable. PDF → PowerPoint conserva la apariencia en imágenes.
+- Para **Fotos a PDF**, selecciona la primera foto y elige **Añadir fotos** o **Solo esta foto**. Se crea un PDF A4 de hasta 100 páginas, una por imagen.
+- Para DOCX → PDF, instala [LibreOffice](https://www.libreoffice.org/download/) en su ubicación de Windows habitual. Para vídeo → MP3, instala la compilación Essentials de [FFmpeg para Windows](https://www.gyan.dev/ffmpeg/builds/), por ejemplo con `winget install --id Gyan.FFmpeg.Essentials -e`. Órbita detecta los enlaces de WinGet. Para ubicaciones personalizadas, establece `ORBITA_LIBREOFFICE` con la ruta absoluta a `soffice.com` o `ORBITA_FFMPEG` con la ruta absoluta a `ffmpeg.exe` y reinicia Órbita. También puedes colocar las herramientas junto al ejecutable en `tools/libreoffice/program/soffice.com` y `tools/ffmpeg/ffmpeg.exe`.
 - El recorte es por coordenadas; todavía no hay editor visual de imagen, eliminación de fondo ni vista previa del recorte.
 - TXT ↔ MD conserva bytes y no interpreta ni elimina la sintaxis Markdown.
 - JPG coloca la transparencia sobre blanco. La compresión a calidad 75 % puede generar un archivo mayor según la entrada.
 - La edición trabaja sobre una imagen / primera página TIFF, no sobre secuencias animadas o TIFF multipágina.
-- El atajo usa la selección del Shell de Windows y no el portapapeles. Los gestores de archivos de terceros no están incluidos. No hay soporte para carpetas ni lotes.
+- El atajo usa un archivo seleccionado en el Shell de Windows. Para combinar fotos, se añaden desde el selector de Órbita.
 - Cerrar Preferencias devuelve Órbita a la bandeja. Usa «Salir de Órbita» para detenerla.
 - La distribución es una carpeta portable sin firma digital ni instalador.
 

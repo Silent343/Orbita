@@ -133,8 +133,10 @@ public sealed class WorkspaceView : UserControl
         _tools.IsEnabled = !_viewModel.IsBusy && _viewModel.Group != ActionGroup.Tools;
         _notice.Text = _viewModel.File?.Category switch
         {
-            FileCategory.Pdf => _viewModel.L["PdfTextNotice"] + " " + _viewModel.L["RequiresDocumentEngine"],
+            FileCategory.Pdf => _viewModel.L["PdfTextNotice"],
             FileCategory.Image => _viewModel.L["JpegNotice"],
+            FileCategory.Word => _viewModel.L["WordPdfNotice"],
+            FileCategory.Video => _viewModel.L["VideoMp3Notice"],
             _ => ""
         };
         _notice.Visibility = _notice.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;

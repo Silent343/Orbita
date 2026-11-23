@@ -32,7 +32,7 @@ public sealed class DomainAndArchitectureTests
         var handler = new SpyHandler();
         var service = new FileActions(new ActionCatalog(), [handler]);
         var asset = FileAsset.Create(Path.Combine(Path.GetTempPath(), "file.pdf"), 10, DateTimeOffset.UtcNow);
-        await Assert.ThrowsAsync<DomainException>(() => service.ExecuteAsync(new ActionRequest(asset, "pdf.word", Path.GetTempPath())));
+        await Assert.ThrowsAsync<DomainException>(() => service.ExecuteAsync(new ActionRequest(asset, "unknown", Path.GetTempPath())));
         await Assert.ThrowsAsync<DomainException>(() => service.ExecuteAsync(new ActionRequest(asset, "image.crop", Path.GetTempPath())));
         Assert.False(handler.WasCalled);
     }

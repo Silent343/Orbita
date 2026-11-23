@@ -12,11 +12,11 @@ public sealed class OperationCoordinator(IFileActions actions, ActivityService a
     PreferencesState preferences, Diagnostics diagnostics)
 {
     public async Task<CompletedOperation> ExecuteAsync(FileAsset file, FileAction action,
-        ImageEditOptions? options, CancellationToken cancellationToken)
+        ImageEditOptions? options, CancellationToken cancellationToken, IReadOnlyList<string>? additionalImages = null)
     {
         var output = preferences.Current.OutputDirectory
             ?? Path.Combine(Path.GetDirectoryName(file.Path)!, "Orbita");
-        var result = await actions.ExecuteAsync(new ActionRequest(file, action.Id, output, options), cancellationToken);
+        var result = await actions.ExecuteAsync(new ActionRequest(file, action.Id, output, options, additionalImages), cancellationToken);
         try
         {
             // Once output is committed, cancellation must not suppress the history entry.

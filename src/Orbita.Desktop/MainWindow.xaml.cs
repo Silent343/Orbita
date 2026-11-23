@@ -180,7 +180,8 @@ public sealed partial class MainWindow : Window
         {
             if (!action.Available) { ShowNotice(action.UnavailableReasonKey ?? "ErrorActionUnavailable", InfoBarSeverity.Warning); return; }
             ImageEditOptions? options = null;
-            if (action.Id is "image.crop" or "image.resize" && _workspace.File is not null)
+            IReadOnlyList<string>? additionalImages = null;
+            if (_workspace.File is { } current && action.Id is "image.crop" or "image.resize" or "image.pdf")
             {
                 _actionDialogOpen = true;
                 var wasVisible = AppWindow.IsVisible;
@@ -196,16 +197,44 @@ public sealed partial class MainWindow : Window
                         finally { Root.Loaded -= onLoaded; }
                     }
                     var dialogRoot = Root.XamlRoot ?? throw new InvalidOperationException("The dialog host is unavailable.");
-                    options = await ImageOptionsDialog.ShowAsync(dialogRoot, _workspace.File, action.Id == "image.crop", L);
+                    if (action.Id == "image.pdf")
+                    {
+                        var dialog = new ContentDialog
+                        {
+                            XamlRoot = dialogRoot,
+                            Title = L["ActionPhotosPdf"],
+                            Content = L.Format("PhotosPdfInstructions", current.Name),
+                            PrimaryButtonText = L["PhotosPdfAdd"],
+                            SecondaryButtonText = L["PhotosPdfSingle"],
+                            CloseButtonText = L["Cancel"],
+                            DefaultButton = ContentDialogButton.Primary
+                        };
+                        switch (await dialog.ShowAsync())
+                        {
+                            case ContentDialogResult.Primary:
+                                additionalImages = await _picker.PickImagesAsync();
+                                if (additionalImages.Count == 0) return;
+                                break;
+                            case ContentDialogResult.Secondary:
+                                break;
+                            default:
+                                return;
+                        }
+                    }
+                    else
+                    {
+                        options = await ImageOptionsDialog.ShowAsync(dialogRoot, current, action.Id == "image.crop", L);
+                        if (options is null) return;
+                    }
                 }
                 finally
                 {
                     _actionDialogOpen = false;
                     if (fromOverlay && !wasVisible) AppWindow.Hide();
                 }
-                if (options is null) return;
+                if (!ReferenceEquals(current, _workspace.File)) return;
             }
-            await _workspace.ExecuteAsync(action, options);
+            await _workspace.ExecuteAsync(action, options, additionalImages);
             if (fromOverlay && _tray.Visible)
                 _tray.ShowBalloonTip(3500, L["AppName"], _workspace.Status, Forms.ToolTipIcon.None);
             else if (!_closing) Activate();

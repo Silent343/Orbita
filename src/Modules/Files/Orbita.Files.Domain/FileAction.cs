@@ -8,6 +8,6 @@ public sealed record ImageEditOptions(uint Width = 0, uint Height = 0,
     uint Left = 0, uint Top = 0, uint CropWidth = 0, uint CropHeight = 0);
 
 public sealed record ActionRequest(FileAsset File, string ActionId, string OutputDirectory,
-    ImageEditOptions? ImageOptions = null);
+    ImageEditOptions? ImageOptions = null, IReadOnlyList<string>? AdditionalImages = null);
 
 public sealed record ActionResult(IReadOnlyList<string> OutputPaths, long OutputBytes);

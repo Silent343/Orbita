@@ -1,6 +1,7 @@
 using System.Text;
 using Orbita.Files.Application;
 using Orbita.Files.Domain;
+using Orbita.SharedKernel;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -12,11 +13,34 @@ namespace Orbita.Files.Infrastructure;
 
 public sealed class PdfActionHandler : IFileActionHandler
 {
-    public bool CanHandle(string actionId) => actionId is "pdf.png" or "pdf.jpg" or "pdf.txt" or "pdf.md";
+    public bool CanHandle(string actionId) => actionId is "pdf.png" or "pdf.jpg" or "pdf.txt" or "pdf.md" or "pdf.word" or "pdf.pptx";
 
-    public Task<ActionResult> ExecuteAsync(ActionRequest request, CancellationToken cancellationToken) =>
-        request.ActionId is "pdf.txt" or "pdf.md"
-            ? ExtractTextAsync(request, cancellationToken) : RenderPagesAsync(request, cancellationToken);
+    public Task<ActionResult> ExecuteAsync(ActionRequest request, CancellationToken cancellationToken) => request.ActionId switch
+    {
+        "pdf.txt" or "pdf.md" => ExtractTextAsync(request, cancellationToken),
+        "pdf.word" or "pdf.pptx" => ExportOfficeAsync(request, cancellationToken),
+        _ => RenderPagesAsync(request, cancellationToken)
+    };
+
+    private static async Task<ActionResult> ExportOfficeAsync(ActionRequest request, CancellationToken cancellationToken)
+    {
+        var word = request.ActionId == "pdf.word";
+        using var output = OutputFile.Create(request.OutputDirectory, Path.GetFileNameWithoutExtension(request.File.Name),
+            word ? ".docx" : ".pptx");
+        if (word)
+            await Task.Run(() => PdfOfficeExporter.WriteWord(request.File.Path, output.Stream, cancellationToken), cancellationToken);
+        else
+        {
+            var input = await StorageFile.GetFileFromPathAsync(request.File.Path).AsTask(cancellationToken);
+            var pdf = await NativePdf.LoadFromFileAsync(input).AsTask(cancellationToken);
+            if (pdf.PageCount == 0) throw new DomainException("ErrorInvalidPdf");
+            await PdfOfficeExporter.WriteSlidesAsync(pdf, output.Stream, cancellationToken);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        var length = output.Stream.Length;
+        output.Commit();
+        return new ActionResult([output.Path], length);
+    }
 
     private static async Task<ActionResult> ExtractTextAsync(ActionRequest request, CancellationToken cancellationToken)
     {
@@ -52,11 +76,7 @@ public sealed class PdfActionHandler : IFileActionHandler
                 cancellationToken.ThrowIfCancellationRequested();
                 using var page = document.GetPage(index);
                 using var rendered = new InMemoryRandomAccessStream();
-                var width = (uint)Math.Clamp(page.Size.Width * 2, 1, 4096);
-                var height = (uint)Math.Max(1, page.Size.Height * width / page.Size.Width);
-                await page.RenderToStreamAsync(rendered, new Windows.Data.Pdf.PdfPageRenderOptions
-                    { DestinationWidth = width, DestinationHeight = height }).AsTask(cancellationToken);
-                rendered.Seek(0);
+                await RenderPageAsync(page, rendered, cancellationToken);
                 var decoder = await BitmapDecoder.CreateAsync(rendered).AsTask(cancellationToken);
                 using var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8,
                     BitmapAlphaMode.Premultiplied).AsTask(cancellationToken);
@@ -73,5 +93,20 @@ public sealed class PdfActionHandler : IFileActionHandler
             return result;
         }
         finally { foreach (var output in reservations) output.Dispose(); }
+    }
+
+    internal static async Task RenderPageAsync(Windows.Data.Pdf.PdfPage page, IRandomAccessStream stream,
+        CancellationToken cancellationToken)
+    {
+        var size = page.Size;
+        if (size.Width <= 0 || size.Height <= 0) throw new DomainException("ErrorInvalidPdf");
+        var scale = Math.Min(2, 4096 / Math.Max(size.Width, size.Height));
+        await page.RenderToStreamAsync(stream, new Windows.Data.Pdf.PdfPageRenderOptions
+        {
+            DestinationWidth = (uint)Math.Max(1, size.Width * scale),
+            DestinationHeight = (uint)Math.Max(1, size.Height * scale),
+            BitmapEncoderId = BitmapEncoder.PngEncoderId
+        }).AsTask(cancellationToken);
+        stream.Seek(0);
     }
 }
