@@ -24,10 +24,17 @@ public sealed class PhotoPdfActionHandler : IFileActionHandler
         {
             cancellationToken.ThrowIfCancellationRequested();
             var asset = await new LocalFileInspector().InspectAsync(path, cancellationToken);
-            if (asset.Category != FileCategory.Image) throw new DomainException("ErrorUnsupportedPhoto");
+            if (!asset.IsPhoto) throw new DomainException("ErrorUnsupportedPhoto");
             using var jpeg = new MemoryStream();
-            if (asset.IsHeic)
-                await HeicJpeg.WriteAsync(path, jpeg, cancellationToken);
+            if (!asset.UsesWindowsBitmap)
+                await Task.Run(() =>
+                {
+                    using var image = AdvancedImageCodec.Read(asset);
+                    AdvancedImageCodec.Prepare(image);
+                    if (Math.Max(image.Width, image.Height) > 4096) image.Resize(4096, 4096);
+                    AdvancedImageCodec.PrepareJpeg(image);
+                    image.Write(jpeg, MagickFormat.Jpeg);
+                }, cancellationToken);
             else
             {
                 await using var source = File.OpenRead(path);
@@ -75,27 +82,4 @@ public sealed class PhotoPdfActionHandler : IFileActionHandler
         using var canvas = XGraphics.FromPdfPage(page);
         canvas.DrawImage(image, (page.Width.Point - width) / 2, (page.Height.Point - height) / 2, width, height);
     }
-}
-
-internal static class HeicJpeg
-{
-    public static Task WriteAsync(string path, Stream output, CancellationToken cancellationToken) =>
-        Task.Run(() =>
-        {
-            using var source = File.OpenRead(path);
-            try
-            {
-                var settings = new MagickReadSettings { Format = MagickFormat.Heic, FrameCount = 1 };
-                using var image = new MagickImage(source, settings);
-                cancellationToken.ThrowIfCancellationRequested();
-                image.AutoOrient();
-                image.ColorSpace = ColorSpace.sRGB;
-                image.BackgroundColor = MagickColors.White;
-                image.Alpha(AlphaAction.Remove);
-                image.Strip();
-                image.Quality = 94;
-                image.Write(output, MagickFormat.Jpeg);
-            }
-            catch (MagickException) { throw new DomainException("ErrorInvalidHeic"); }
-        }, cancellationToken);
 }

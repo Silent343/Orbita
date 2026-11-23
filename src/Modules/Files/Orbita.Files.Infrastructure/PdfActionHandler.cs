@@ -28,11 +28,10 @@ public sealed class PdfActionHandler : IFileActionHandler
         using var output = OutputFile.Create(request.OutputDirectory, Path.GetFileNameWithoutExtension(request.File.Name),
             word ? ".docx" : ".pptx");
         if (word)
-            await Task.Run(() => PdfOfficeExporter.WriteWord(request.File.Path, output.Stream, cancellationToken), cancellationToken);
+            await Task.Run(() => PdfOfficeExporter.WriteWordAsync(request.File.Path, output.Stream, cancellationToken), cancellationToken);
         else
         {
-            var input = await StorageFile.GetFileFromPathAsync(request.File.Path).AsTask(cancellationToken);
-            var pdf = await NativePdf.LoadFromFileAsync(input).AsTask(cancellationToken);
+            var pdf = await LoadNativeAsync(request.File.Path, cancellationToken);
             if (pdf.PageCount == 0) throw new DomainException("ErrorInvalidPdf");
             await PdfOfficeExporter.WriteSlidesAsync(pdf, output.Stream, cancellationToken);
         }
@@ -65,8 +64,7 @@ public sealed class PdfActionHandler : IFileActionHandler
 
     private static async Task<ActionResult> RenderPagesAsync(ActionRequest request, CancellationToken cancellationToken)
     {
-        var input = await StorageFile.GetFileFromPathAsync(request.File.Path).AsTask(cancellationToken);
-        var document = await NativePdf.LoadFromFileAsync(input).AsTask(cancellationToken);
+        var document = await LoadNativeAsync(request.File.Path, cancellationToken);
         var reservations = new List<OutputFile>();
         try
         {
@@ -95,12 +93,18 @@ public sealed class PdfActionHandler : IFileActionHandler
         finally { foreach (var output in reservations) output.Dispose(); }
     }
 
+    internal static async Task<NativePdf> LoadNativeAsync(string path, CancellationToken cancellationToken)
+    {
+        var input = await StorageFile.GetFileFromPathAsync(path).AsTask(cancellationToken);
+        return await NativePdf.LoadFromFileAsync(input).AsTask(cancellationToken);
+    }
+
     internal static async Task RenderPageAsync(Windows.Data.Pdf.PdfPage page, IRandomAccessStream stream,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, double requestedScale = 2)
     {
         var size = page.Size;
         if (size.Width <= 0 || size.Height <= 0) throw new DomainException("ErrorInvalidPdf");
-        var scale = Math.Min(2, 4096 / Math.Max(size.Width, size.Height));
+        var scale = Math.Min(requestedScale, 4096 / Math.Max(size.Width, size.Height));
         await page.RenderToStreamAsync(stream, new Windows.Data.Pdf.PdfPageRenderOptions
         {
             DestinationWidth = (uint)Math.Max(1, size.Width * scale),

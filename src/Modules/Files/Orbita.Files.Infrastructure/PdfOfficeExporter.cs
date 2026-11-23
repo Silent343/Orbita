@@ -13,9 +13,10 @@ namespace Orbita.Files.Infrastructure;
 
 internal static class PdfOfficeExporter
 {
-    public static void WriteWord(string source, Stream output, CancellationToken cancellationToken)
+    public static async Task WriteWordAsync(string source, Stream output, CancellationToken cancellationToken)
     {
         using var pdf = UglyToad.PdfPig.PdfDocument.Open(source);
+        using var ocr = new PdfPageOcr(source);
         using var document = WordprocessingDocument.Create(output, WordprocessingDocumentType.Document);
         using var writer = OpenXmlWriter.Create(document.AddMainDocumentPart());
         writer.WriteStartElement(new W.Document());
@@ -26,7 +27,14 @@ internal static class PdfOfficeExporter
             cancellationToken.ThrowIfCancellationRequested();
             if (page.Number > 1)
                 writer.WriteElement(new W.Paragraph(new W.Run(new W.Break { Type = W.BreakValues.Page })));
-            foreach (var line in ContentOrderTextExtractor.GetText(page).ReplaceLineEndings("\n").Split('\n'))
+            var extracted = ContentOrderTextExtractor.GetText(page);
+            var extractedCount = extracted.Count(char.IsLetterOrDigit);
+            if (string.IsNullOrWhiteSpace(extracted) || (extractedCount < 24 && page.GetImages().Any()))
+            {
+                var recognized = await ocr.RecognizeAsync(page.Number, cancellationToken);
+                if (recognized.Count(char.IsLetterOrDigit) > extractedCount) extracted = recognized;
+            }
+            foreach (var line in extracted.ReplaceLineEndings("\n").Split('\n'))
             {
                 var text = ValidXmlText(line);
                 foundText |= !string.IsNullOrWhiteSpace(text);

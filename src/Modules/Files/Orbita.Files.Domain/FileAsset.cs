@@ -7,8 +7,10 @@ public enum ActionGroup { Convert, Tools }
 
 public sealed record FileAsset
 {
-    public static IReadOnlyList<string> ImageExtensions { get; } =
-        Array.AsReadOnly(new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".heic", ".heif" });
+    private static readonly string[] WindowsBitmapExtensions = [".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"];
+    private static readonly string[] RawExtensions = [".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2"];
+    public static IReadOnlyList<string> PhotoExtensions { get; } =
+        Array.AsReadOnly(WindowsBitmapExtensions.Concat([".heic", ".heif", ".webp", ".avif"]).Concat(RawExtensions).ToArray());
 
     private FileAsset(string path, long size, DateTimeOffset modified)
     {
@@ -19,7 +21,7 @@ public sealed record FileAsset
         Category = Extension switch
         {
             ".pdf" => FileCategory.Pdf,
-            _ when ImageExtensions.Contains(Extension) => FileCategory.Image,
+            _ when PhotoExtensions.Contains(Extension) || Extension is ".svg" or ".gif" or ".ico" => FileCategory.Image,
             ".txt" or ".md" => FileCategory.Text,
             ".docx" => FileCategory.Word,
             ".mp4" or ".m4v" or ".mkv" or ".mov" or ".avi" or ".webm" or ".wmv" or ".mpeg" or ".mpg" or ".3gp" => FileCategory.Video,
@@ -31,7 +33,9 @@ public sealed record FileAsset
     public string Name => System.IO.Path.GetFileName(Path);
     public long Size { get; }
     public string Extension { get; }
-    public bool IsHeic => Extension is ".heic" or ".heif";
+    public bool IsRawPhoto => RawExtensions.Contains(Extension);
+    public bool IsPhoto => PhotoExtensions.Contains(Extension);
+    public bool UsesWindowsBitmap => WindowsBitmapExtensions.Contains(Extension);
     public FileCategory Category { get; }
     public DateTimeOffset Modified { get; }
 

@@ -11,5 +11,8 @@
     <!-- Keep PDFsharp's transitive PKCS dependency on a patched version. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Magick.NET-Q8-x64" Version="15.1.0" />
+    <PackageReference Include="TesseractOCR" Version="5.5.2" />
+    <PackageReference Include="Svg.Skia" Version="5.2.3" />
+    <None Update="tessdata/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

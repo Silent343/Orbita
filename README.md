@@ -33,16 +33,20 @@ Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la 
 
 ## Estado de verificación de esta entrega
 
-Las 30 pruebas automatizadas incluyen validación de los archivos Office generados, lectura de HEIC, un PDF con varias fotos, exportación mediante LibreOffice y extracción de audio con FFmpeg. Los casos con motores externos se ejecutan cuando las rutas `ORBITA_LIBREOFFICE` y `ORBITA_FFMPEG` están configuradas. [Detalles de verificación de la rueda](VERIFICATION.md).
+Las pruebas automatizadas incluyen validación de los archivos Office generados, OCR de un PDF mixto, conversiones de imagen, un PDF con varias fotos, exportación mediante LibreOffice y extracción de audio con FFmpeg. Los casos con motores externos se ejecutan cuando las rutas `ORBITA_LIBREOFFICE` y `ORBITA_FFMPEG` están configuradas. [Detalles de verificación de la rueda](VERIFICATION.md).
 
 ## Funciones incluidas
 
 | Entrada | Acciones |
 | --- | --- |
-| PDF | Crear Word (DOCX) con texto editable, PowerPoint (PPTX) con una imagen por página, TXT o Markdown; renderizar páginas a PNG o JPG |
+| PDF | Crear Word (DOCX) con texto editable y OCR para escaneos en español e inglés, PowerPoint (PPTX) con una imagen por página, TXT o Markdown con texto incrustado. Renderizar páginas a PNG o JPG |
 | DOCX | Exportar a PDF con LibreOffice |
-| PNG, JPG, BMP, TIFF | Convertir entre estos formatos; reunir fotos en un PDF; recortar, redimensionar, girar y comprimir |
-| HEIC, HEIF | Convertir a JPG o añadir al PDF de fotos |
+| PNG, JPG, BMP, TIFF | Convertir entre estos formatos y a WebP. Reunir fotos en un PDF, recortar, redimensionar, girar y comprimir |
+| HEIC, HEIF, AVIF, RAW compatible | Convertir a JPG, PNG, WebP o TIFF, o añadir al PDF de fotos |
+| WebP | Convertir a JPG, PNG o TIFF, o añadir al PDF de fotos |
+| SVG | Renderizar a PNG, JPG o WebP, o exportar a PDF vectorial |
+| GIF | Exportar hasta 300 fotogramas como PNG separados |
+| PNG e ICO | Crear un icono de varios tamaños desde PNG. Extraer a PNG la imagen más grande de un ICO |
 | MP4, M4V, MKV, MOV, AVI, WebM, WMV, MPEG, MPG, 3GP | Extraer la primera pista de audio como MP3 mediante FFmpeg |
 | TXT / MD | Guardar copia como TXT / MD, conservando el contenido |
 | Cualquier archivo | Crear un ZIP con el archivo |
@@ -51,7 +55,8 @@ Incluye cancelación, historial local de los últimos 200 resultados, preferenci
 
 ## Límites de esta primera versión
 
-- PDF → Word genera párrafos editables y saltos de página con formato básico. La extracción de texto no reconstruye tablas ni diseño. Los escaneos necesitan OCR para obtener texto editable. PDF → PowerPoint conserva la apariencia en imágenes.
+- En **Word editable**, Órbita conserva el texto incrustado y usa Tesseract local para páginas escaneadas. Incluye español de [tessdata_best 4.1.0](https://github.com/tesseract-ocr/tessdata_best/releases/tag/4.1.0) e inglés de [tessdata_fast 4.1.0](https://github.com/tesseract-ocr/tessdata_fast/releases/tag/4.1.0). El resultado tiene párrafos y saltos de página con formato básico. Revisa los nombres y números reconocidos en escaneos borrosos. PDF → PowerPoint conserva la apariencia en imágenes.
+- Los formatos RAW reconocidos son DNG, CR2, CR3, NEF, ARW, RAF, ORF y RW2, según el modelo de cámara y la compatibilidad del decodificador. Para convertir SVG, los elementos gráficos deben estar contenidos en el propio archivo.
 - Para **Fotos a PDF**, selecciona la primera foto y elige **Añadir fotos** o **Solo esta foto**. Se crea un PDF A4 de hasta 100 páginas, una por imagen.
 - Para DOCX → PDF, instala [LibreOffice](https://www.libreoffice.org/download/) en su ubicación de Windows habitual. Para vídeo → MP3, instala la compilación Essentials de [FFmpeg para Windows](https://www.gyan.dev/ffmpeg/builds/), por ejemplo con `winget install --id Gyan.FFmpeg.Essentials -e`. Órbita detecta los enlaces de WinGet. Para ubicaciones personalizadas, establece `ORBITA_LIBREOFFICE` con la ruta absoluta a `soffice.com` o `ORBITA_FFMPEG` con la ruta absoluta a `ffmpeg.exe` y reinicia Órbita. También puedes colocar las herramientas junto al ejecutable en `tools/libreoffice/program/soffice.com` y `tools/ffmpeg/ffmpeg.exe`.
 - El recorte es por coordenadas; todavía no hay editor visual de imagen, eliminación de fondo ni vista previa del recorte.

@@ -9,7 +9,7 @@ public sealed class ActionCatalog : IActionCatalog
         if (group == ActionGroup.Tools)
         {
             var tools = new List<FileAction> { new("zip", "ActionZip", "\uE8B7", group) };
-            if (file.Category == FileCategory.Image && !file.IsHeic)
+            if (file.UsesWindowsBitmap)
                 tools.AddRange([
                     new("image.crop", "ActionCrop", "\uE7A8", group),
                     new("image.resize", "ActionResize", "\uE740", group),
@@ -27,21 +27,33 @@ public sealed class ActionCatalog : IActionCatalog
                 new("pdf.md", "ActionMarkdown", "\uE943", group),
                 new("pdf.jpg", "ActionJpg", "\uE91B", group),
                 new("pdf.png", "ActionPng", "\uEB9F", group)],
-            FileCategory.Image when file.IsHeic => [
-                new("image.jpg", "ActionJpg", "\uE91B", group),
-                new("image.pdf", "ActionPhotosPdf", "\uEA90", group)],
-            FileCategory.Image => [
-                new("image.png", "ActionPng", "\uEB9F", group),
-                new("image.jpg", "ActionJpg", "\uE91B", group),
-                new("image.bmp", "ActionBmp", "\uE8B9", group),
-                new("image.tiff", "ActionTiff", "\uE8A7", group),
-                new("image.pdf", "ActionPhotosPdf", "\uEA90", group)],
+            FileCategory.Image => ImageConversions(file, group),
             FileCategory.Word => [new("word.pdf", "ActionPdf", "\uEA90", group)],
             FileCategory.Video => [new("video.mp3", "ActionMp3", "\uE8D6", group)],
             FileCategory.Text => [
                 new("text.txt", "ActionTxt", "\uE8E9", group),
                 new("text.md", "ActionMarkdown", "\uE943", group)],
             _ => []
+        };
+    }
+
+    private static IReadOnlyList<FileAction> ImageConversions(FileAsset file, ActionGroup group)
+    {
+        FileAction png = new("image.png", "ActionPng", "\uEB9F", group);
+        FileAction jpg = new("image.jpg", "ActionJpg", "\uE91B", group);
+        FileAction webp = new("image.webp", "ActionWebp", "\uEB9F", group);
+        FileAction tiff = new("image.tiff", "ActionTiff", "\uE8A7", group);
+        FileAction photosPdf = new("image.pdf", "ActionPhotosPdf", "\uEA90", group);
+        return file.Extension switch
+        {
+            ".svg" => [png, webp, new("image.svg.pdf", "ActionSvgPdf", "\uEA90", group), jpg],
+            ".gif" => [new("image.gif.frames", "ActionGifFrames", "\uE8B9", group)],
+            ".ico" => [png],
+            ".png" => [jpg, webp, new("image.ico", "ActionIco", "\uE7C5", group), photosPdf, png, tiff,
+                new("image.bmp", "ActionBmp", "\uE8B9", group)],
+            _ when file.UsesWindowsBitmap => [png, jpg, webp, photosPdf, tiff, new("image.bmp", "ActionBmp", "\uE8B9", group)],
+            ".webp" => [png, jpg, tiff, photosPdf],
+            _ => [jpg, png, webp, tiff, photosPdf]
         };
     }
 }

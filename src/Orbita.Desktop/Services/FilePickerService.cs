@@ -22,7 +22,7 @@ public sealed class FilePickerService(Window window)
             SuggestedStartLocation = PickerLocationId.PicturesLibrary
         };
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
-        foreach (var extension in FileAsset.ImageExtensions) picker.FileTypeFilter.Add(extension);
+        foreach (var extension in FileAsset.PhotoExtensions) picker.FileTypeFilter.Add(extension);
         return (await picker.PickMultipleFilesAsync()).Select(file => file.Path).ToArray();
     }
 

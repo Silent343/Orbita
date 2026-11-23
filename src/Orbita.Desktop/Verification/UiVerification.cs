@@ -95,13 +95,17 @@ internal static class UiVerification
             if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
                 throw new InvalidOperationException("High-resolution wheels must accumulate a full tick before paging.");
             overlay.Scroll(-60);
+            if (!overlay.VisibleActions.Any(action => action.Id == "image.bmp") ||
+                overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
+                throw new InvalidOperationException("Scrolling must reveal the remaining image conversions.");
+            overlay.Scroll(-120);
             if (overlay.VisibleActions.Count != 5 || overlay.VisibleActions.Any(action => action.Group != ActionGroup.Tools))
                 throw new InvalidOperationException("Scrolling must reveal the five image tools.");
             using var tools = overlay.Snapshot();
             tools.Save(Path.Combine(directory, "wheel-tools.png"), ImageFormat.Png);
             SaveGlassPreview(backdrop, tools, Path.Combine(directory, "wheel-glass-preview.png"));
-            overlay.Scroll(120);
-            if (overlay.VisibleActions.Any(action => action.Group != ActionGroup.Convert))
+            overlay.Scroll(240);
+            if (!overlay.VisibleActions.Any(action => action.Id == "image.webp"))
                 throw new InvalidOperationException("Scrolling in the opposite direction must return to conversions.");
         }
         finally { overlay.Hide(); }
@@ -138,8 +142,13 @@ internal static class UiVerification
         [
             ("documento.pdf", ["pdf.word", "pdf.pptx"]),
             ("documento.docx", ["word.pdf"]),
-            ("foto.heic", ["image.jpg", "image.pdf"]),
-            ("foto.png", ["image.pdf"]),
+            ("foto.heic", ["image.jpg", "image.png", "image.webp", "image.tiff", "image.pdf"]),
+            ("foto.avif", ["image.webp", "image.tiff"]),
+            ("foto.dng", ["image.jpg", "image.png"]),
+            ("foto.png", ["image.pdf", "image.ico"]),
+            ("icono.ico", ["image.png"]),
+            ("dibujo.svg", ["image.png", "image.webp", "image.svg.pdf"]),
+            ("animacion.gif", ["image.gif.frames"]),
             ("video.mp4", ["video.mp3"])
         ];
         try

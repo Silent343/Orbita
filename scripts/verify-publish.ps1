@@ -5,7 +5,11 @@ $requiredFiles = @(
     'Orbita.Desktop.dll',
     'Orbita.Desktop.deps.json',
     'Orbita.Desktop.runtimeconfig.json',
-    'Orbita.Desktop.pri'
+    'Orbita.Desktop.pri',
+    'tessdata\eng.traineddata',
+    'tessdata\spa.traineddata',
+    'x64\tesseract55.dll',
+    'x64\leptonica-1.85.0.dll'
 )
 foreach ($requiredFile in $requiredFiles) {
     $path = Join-Path $PublishDirectory $requiredFile
