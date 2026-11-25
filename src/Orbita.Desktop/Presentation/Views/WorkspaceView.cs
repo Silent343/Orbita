@@ -137,6 +137,8 @@ public sealed class WorkspaceView : UserControl
             FileCategory.Image => _viewModel.L["JpegNotice"],
             FileCategory.Word => _viewModel.L["WordPdfNotice"],
             FileCategory.Video => _viewModel.L["VideoMp3Notice"],
+            FileCategory.Spreadsheet => _viewModel.L["SpreadsheetNotice"],
+            FileCategory.Table => _viewModel.L["TableNotice"],
             _ => ""
         };
         _notice.Visibility = _notice.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;

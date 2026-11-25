@@ -181,7 +181,7 @@ public sealed partial class MainWindow : Window
             if (!action.Available) { ShowNotice(action.UnavailableReasonKey ?? "ErrorActionUnavailable", InfoBarSeverity.Warning); return; }
             ImageEditOptions? options = null;
             IReadOnlyList<string>? additionalImages = null;
-            if (_workspace.File is { } current && action.Id is "image.crop" or "image.resize" or "image.pdf")
+            if (_workspace.File is { } current && action.Id is "image.crop" or "image.resize" or "image.pdf" or "video.photos")
             {
                 _actionDialogOpen = true;
                 var wasVisible = AppWindow.IsVisible;
@@ -197,13 +197,13 @@ public sealed partial class MainWindow : Window
                         finally { Root.Loaded -= onLoaded; }
                     }
                     var dialogRoot = Root.XamlRoot ?? throw new InvalidOperationException("The dialog host is unavailable.");
-                    if (action.Id == "image.pdf")
+                    if (action.Id is "image.pdf" or "video.photos")
                     {
                         var dialog = new ContentDialog
                         {
                             XamlRoot = dialogRoot,
-                            Title = L["ActionPhotosPdf"],
-                            Content = L.Format("PhotosPdfInstructions", current.Name),
+                            Title = L[action.LabelKey],
+                            Content = L.Format(action.Id == "video.photos" ? "PhotosVideoInstructions" : "PhotosPdfInstructions", current.Name),
                             PrimaryButtonText = L["PhotosPdfAdd"],
                             SecondaryButtonText = L["PhotosPdfSingle"],
                             CloseButtonText = L["Cancel"],

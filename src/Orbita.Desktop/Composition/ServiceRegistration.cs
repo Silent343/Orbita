@@ -38,6 +38,7 @@ public static class ServiceRegistration
         services.AddSingleton<IFileActionHandler, PdfActionHandler>();
         services.AddSingleton<IFileActionHandler, PhotoPdfActionHandler>();
         services.AddSingleton<IFileActionHandler, ExternalConversionHandler>();
+        services.AddSingleton<IFileActionHandler, TableConversionHandler>();
         services.AddSingleton<IFileActions, FileActions>();
         services.AddSingleton<OperationCoordinator>();
 

@@ -141,15 +141,21 @@ internal static class UiVerification
         (string File, string[] Actions)[] examples =
         [
             ("documento.pdf", ["pdf.word", "pdf.pptx"]),
-            ("documento.docx", ["word.pdf"]),
+            ("documento.docx", ["word.pdf", "markup.md", "markup.epub"]),
             ("foto.heic", ["image.jpg", "image.png", "image.webp", "image.tiff", "image.pdf"]),
             ("foto.avif", ["image.webp", "image.tiff"]),
             ("foto.dng", ["image.jpg", "image.png"]),
-            ("foto.png", ["image.pdf", "image.ico"]),
+            ("foto.png", ["image.pdf", "image.ico", "video.photos"]),
             ("icono.ico", ["image.png"]),
             ("dibujo.svg", ["image.png", "image.webp", "image.svg.pdf"]),
             ("animacion.gif", ["image.gif.frames"]),
-            ("video.mp4", ["video.mp3"])
+            ("video.mp4", ["video.mp3", "video.webm", "video.gif", "video.frames"]),
+            ("video.mov", ["video.mp4", "video.webm"]),
+            ("notas.md", ["markup.docx", "markup.epub", "markup.html"]),
+            ("notas.txt", ["markup.docx", "markup.epub", "markup.html"]),
+            ("libro.epub", ["book.azw3", "book.pdf", "markup.txt", "markup.docx"]),
+            ("hojas.xlsx", ["sheet.pdf", "sheet.csv"]),
+            ("datos.csv", ["sheet.xlsx", "table.parquet", "table.json"])
         ];
         try
         {

@@ -33,22 +33,27 @@ Los resultados se guardan en una subcarpeta `Orbita` junto al original, o en la 
 
 ## Estado de verificación de esta entrega
 
-Las pruebas automatizadas incluyen validación de los archivos Office generados, OCR de un PDF mixto, conversiones de imagen, un PDF con varias fotos, exportación mediante LibreOffice y extracción de audio con FFmpeg. Los casos con motores externos se ejecutan cuando las rutas `ORBITA_LIBREOFFICE` y `ORBITA_FFMPEG` están configuradas. [Detalles de verificación de la rueda](VERIFICATION.md).
+Las pruebas automatizadas cubren archivos Office editables, OCR de un PDF mixto, conversiones de imagen y vídeo, libros EPUB y datos tabulares. Los casos con motores externos se ejecutan cuando se configuran las rutas `ORBITA_LIBREOFFICE`, `ORBITA_FFMPEG`, `ORBITA_PANDOC` y `ORBITA_CALIBRE` correspondientes. [Detalles de verificación de la rueda](VERIFICATION.md).
 
 ## Funciones incluidas
 
 | Entrada | Acciones |
 | --- | --- |
 | PDF | Crear Word (DOCX) con texto editable y OCR para escaneos en español e inglés, PowerPoint (PPTX) con una imagen por página, TXT o Markdown con texto incrustado. Renderizar páginas a PNG o JPG |
-| DOCX | Exportar a PDF con LibreOffice |
+| DOCX | Exportar a PDF con LibreOffice o a Markdown, HTML, EPUB o texto con Pandoc |
 | PNG, JPG, BMP, TIFF | Convertir entre estos formatos y a WebP. Reunir fotos en un PDF, recortar, redimensionar, girar y comprimir |
 | HEIC, HEIF, AVIF, RAW compatible | Convertir a JPG, PNG, WebP o TIFF, o añadir al PDF de fotos |
 | WebP | Convertir a JPG, PNG o TIFF, o añadir al PDF de fotos |
 | SVG | Renderizar a PNG, JPG o WebP, o exportar a PDF vectorial |
 | GIF | Exportar hasta 300 fotogramas como PNG separados |
 | PNG e ICO | Crear un icono de varios tamaños desde PNG. Extraer a PNG la imagen más grande de un ICO |
-| MP4, M4V, MKV, MOV, AVI, WebM, WMV, MPEG, MPG, 3GP | Extraer la primera pista de audio como MP3 mediante FFmpeg |
-| TXT / MD | Guardar copia como TXT / MD, conservando el contenido |
+| MP4, M4V, MKV, MOV, AVI, WebM, WMV, MPEG, MPG, 3GP | Convertir a MP4 o WebM, extraer MP3, crear un GIF o guardar fotogramas PNG con FFmpeg |
+| Fotos compatibles | Crear un MP4 a partir de la foto seleccionada y otras fotos que añadas |
+| Markdown o HTML | Exportar a Word, EPUB o texto. Convertir entre Markdown y HTML |
+| EPUB sin DRM | Exportar a Kindle (AZW3) o PDF con Calibre, o a Word, HTML y TXT con Pandoc |
+| XLS, XLSX y ODS | Exportar a PDF o a un CSV por hoja. Convertir XLS y ODS a XLSX |
+| CSV, JSON tabular y Parquet | Convertir los datos entre los tres formatos. Abrir CSV en Excel como XLSX |
+| TXT | Guardar una copia como TXT o Markdown, o exportar a Word, HTML y EPUB |
 | Cualquier archivo | Crear un ZIP con el archivo |
 
 Incluye cancelación, historial local de los últimos 200 resultados, preferencias persistentes y un registro de errores. Todo se procesa en el equipo; no se envían archivos a servidores.
@@ -60,7 +65,9 @@ Incluye cancelación, historial local de los últimos 200 resultados, preferenci
 - Para **Fotos a PDF**, selecciona la primera foto y elige **Añadir fotos** o **Solo esta foto**. Se crea un PDF A4 de hasta 100 páginas, una por imagen.
 - Para DOCX → PDF, instala [LibreOffice](https://www.libreoffice.org/download/) en su ubicación de Windows habitual. Para vídeo → MP3, instala la compilación Essentials de [FFmpeg para Windows](https://www.gyan.dev/ffmpeg/builds/), por ejemplo con `winget install --id Gyan.FFmpeg.Essentials -e`. Órbita detecta los enlaces de WinGet. Para ubicaciones personalizadas, establece `ORBITA_LIBREOFFICE` con la ruta absoluta a `soffice.com` o `ORBITA_FFMPEG` con la ruta absoluta a `ffmpeg.exe` y reinicia Órbita. También puedes colocar las herramientas junto al ejecutable en `tools/libreoffice/program/soffice.com` y `tools/ffmpeg/ffmpeg.exe`.
 - El recorte es por coordenadas; todavía no hay editor visual de imagen, eliminación de fondo ni vista previa del recorte.
-- TXT ↔ MD conserva bytes y no interpreta ni elimina la sintaxis Markdown.
+- **Fotos a MP4** muestra cada foto durante dos segundos, empezando por la primera seleccionada. GIF usa los primeros diez segundos del vídeo. Fotogramas PNG guarda uno por segundo, hasta 300.
+- El CSV de un libro contiene los valores de la hoja. XLSX y PDF conservan distintos aspectos del documento según los formatos de origen y de salida. Para convertir CSV como datos tabulares, la primera fila debe tener encabezados.
+- Para conversiones de documentos y EPUB, Órbita busca [Pandoc](https://github.com/jgm/pandoc/releases) y [Calibre](https://calibre-ebook.com/download_windows) junto al ejecutable en `tools/pandoc/pandoc.exe` y `tools/calibre/ebook-convert.exe`, en instalaciones reconocidas o mediante las rutas absolutas `ORBITA_PANDOC` y `ORBITA_CALIBRE`. Los libros, documentos e imágenes se procesan en el equipo.
 - JPG coloca la transparencia sobre blanco. La compresión a calidad 75 % puede generar un archivo mayor según la entrada.
 - La edición trabaja sobre una imagen / primera página TIFF, no sobre secuencias animadas o TIFF multipágina.
 - El atajo usa un archivo seleccionado en el Shell de Windows. Para combinar fotos, se añaden desde el selector de Órbita.
